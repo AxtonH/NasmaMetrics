@@ -29,7 +29,6 @@ const CARD_LAYOUT_STORAGE_KEY = "nasma-dashboard-card-layout";
  */
 document.addEventListener("DOMContentLoaded", function () {
     initCardInteractions();
-    initSatisfactionEditor();
     loadDashboardData();
 });
 
@@ -513,54 +512,6 @@ function resetCardLayout() {
 }
 
 window.resetCardLayout = resetCardLayout;
-
-function initSatisfactionEditor() {
-    const editor = document.getElementById("satisfactionEditor");
-    const hint = document.getElementById("satisfactionEditHint");
-
-    if (!editor || !hint) {
-        return;
-    }
-
-    if (isAdminView) {
-        editor.classList.remove("hidden");
-        hint.textContent = "Editing enabled because admin=true is set in the URL.";
-    } else {
-        editor.classList.add("hidden");
-        hint.textContent = "";
-    }
-}
-
-/**
- * Save satisfaction value
- */
-async function saveSatisfaction() {
-    const value = document.getElementById("satisfactionInput").value;
-    if (!value) {
-        alert("Please enter a satisfaction value");
-        return;
-    }
-
-    try {
-        const response = await fetch("/api/satisfaction", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ value: value }),
-        });
-
-        const data = await response.json();
-        if (data.success) {
-            alert("Satisfaction saved successfully!");
-        } else {
-            alert("Failed to save satisfaction: " + data.error);
-        }
-    } catch (error) {
-        console.error("Error saving satisfaction:", error);
-        alert("Error saving satisfaction");
-    }
-}
 
 /**
  * Show ease editor modal
