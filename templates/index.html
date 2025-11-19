@@ -54,6 +54,15 @@
             text-align: center;
         }
 
+        .card-meta {
+            font-size: 0.925rem;
+            color: #4a4a4a;
+            font-weight: 500;
+            margin: 0;
+        }
+
+
+
         .dashboard-card h2 {
             color: var(--nasma-orange);
         }
@@ -81,40 +90,72 @@
             Nasma Metrics Dashboard
         </h1>
         
-        <!-- Summary Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
-            <!-- Nasma Adoption Card -->
-            <div id="card-adoption" class="dashboard-card summary-card p-6">
-                <h2 class="text-xl font-semibold text-orange-600">Nasma Adoption</h2>
-                <div class="text-5xl font-black highlight-value" id="adoptionCount">-</div>
-                <p class="text-sm text-gray-600">Number of active users</p>
-            </div>
-            <!-- Batch Approvals Accuracy -->
-            <div id="card-batch" class="dashboard-card summary-card p-6">
-                <h2 class="text-xl font-semibold text-orange-600">Batch Approvals Accuracy</h2>
+        <!-- Summary Cards -->
+
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
+
+            <!-- Nasma Adoption Card -->
+
+            <div id="card-adoption" class="dashboard-card summary-card p-6">
+
+                <h2 class="text-xl font-semibold text-orange-600">Nasma Adoption</h2>
+
+                <div class="text-5xl font-black highlight-value" id="adoptionCount">-</div>
+
+                <p class="card-meta">Number of active users</p>
+
+            </div>
+
+            <!-- Batch Approvals Accuracy -->
+
+            <div id="card-batch" class="dashboard-card summary-card p-6">
+
+                <h2 class="text-xl font-semibold text-orange-600">Batch Approvals Accuracy</h2>
+
                 <div class="text-5xl font-black highlight-value">2/3</div>
-                <p class="text-sm text-gray-900">Fewer errors since Nasma launch</p>
-            </div>
-            <!-- Messages Sent Card -->
-            <div id="card-messages" class="dashboard-card summary-card p-6">
-                <h2 class="text-xl font-semibold text-orange-600">Messages sent to Nasma</h2>
-                <div class="text-5xl font-black highlight-value" id="messagesCount">-</div>
-                <p class="text-sm text-gray-500">Qualifying user messages</p>
-            </div>
-            <!-- % Increase in Logged Hours -->
-            <div id="card-logged-hours" class="dashboard-card summary-card p-6">
-                <h2 class="text-xl font-semibold text-orange-600">% Increase in Logged Hours</h2>
-                <div class="text-5xl font-black highlight-value">N/A</div>
-                <p class="text-base text-gray-600">Metric coming soon</p>
-            </div>
-            <!-- Overall Satisfaction Card -->
-            <div id="card-satisfaction" class="dashboard-card summary-card p-6">
-                <h2 class="text-xl font-semibold text-orange-600">Overall Satisfaction</h2>
-                <div class="text-5xl font-black highlight-value" id="satisfactionValue">-</div>
-                <p class="text-sm text-gray-500">Overall satisfaction</p>
-            </div>
-        </div>
-
+                <p class="card-meta">Fewer errors since Nasma launch</p>
+            </div>
+
+            <!-- Messages Sent Card -->
+
+            <div id="card-messages" class="dashboard-card summary-card p-6">
+
+                <h2 class="text-xl font-semibold text-orange-600">Messages sent to Nasma</h2>
+
+                <div class="text-5xl font-black highlight-value" id="messagesCount">-</div>
+
+                <p class="card-meta">Qualifying user messages</p>
+
+            </div>
+
+            <!-- % Increase in Logged Hours -->
+
+            <div id="card-logged-hours" class="dashboard-card summary-card p-6">
+
+                <h2 class="text-xl font-semibold text-orange-600">% Increase in Logged Hours</h2>
+
+                <div class="text-5xl font-black highlight-value">N/A</div>
+
+                <p class="card-meta">Metric coming soon</p>
+
+            </div>
+
+            <!-- Overall Satisfaction Card -->
+
+            <div id="card-satisfaction" class="dashboard-card summary-card p-6">
+
+                <h2 class="text-xl font-semibold text-orange-600">Overall Satisfaction</h2>
+
+                <div class="text-5xl font-black highlight-value" id="satisfactionValue">-</div>
+
+                <p class="card-meta">Overall satisfaction</p>
+
+            </div>
+
+        </div>
+
+
+
         <!-- Performance Charts -->
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -127,7 +168,7 @@
 
                     <h2 class="text-xl font-semibold text-orange-600">Requests Made</h2>
 
-                    <span class="card-drag-handle text-xs text-gray-500 cursor-move select-none">Drag</span>
+                    <span class="card-drag-handle card-meta cursor-move select-none">Drag</span>
 
                 </div>
 
@@ -149,11 +190,11 @@
 
                         <h2 class="text-xl font-semibold text-orange-600">Active Users</h2>
 
-                        <span class="card-drag-handle text-xs text-gray-500 cursor-move select-none">Drag</span>
+                        <span class="card-drag-handle card-meta cursor-move select-none">Drag</span>
 
                     </div>
 
-                    <p id="activeUsersSubtitle" class="text-sm text-gray-500">Active users by month</p>
+                    <p id="activeUsersSubtitle" class="card-meta">Active users by month</p>
 
                 </div>
 
@@ -183,7 +224,7 @@
 
                     <div class="flex items-center gap-4">
 
-                        <span class="card-drag-handle text-xs text-gray-500 cursor-move select-none">Drag</span>
+                        <span class="card-drag-handle card-meta cursor-move select-none">Drag</span>
 
                         <button onclick="showEaseEditor()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">Edit Data</button>
 
@@ -213,11 +254,11 @@
 
                     <h2 class="text-xl font-semibold text-orange-600">Nasma - for logging in hours</h2>
 
-                    <span class="card-drag-handle text-xs text-gray-500 cursor-move select-none">Drag</span>
+                    <span class="card-drag-handle card-meta cursor-move select-none">Drag</span>
 
                 </div>
 
-                <p class="text-sm text-gray-600 mb-4">Distinct users who asked Nasma to log their hours (filtered like messages card)</p>
+                <p class="card-meta mb-4">Distinct users who asked Nasma to log their hours (filtered like messages card)</p>
 
                 <div class="border rounded-lg">
 
@@ -241,7 +282,7 @@
 
                                 <tr>
 
-                                    <td colspan="2" class="px-4 py-3 text-center text-gray-500">Loading...</td>
+                                    <td colspan="2" class="px-4 py-3 text-center card-meta">Loading...</td>
 
                                 </tr>
 
@@ -255,6 +296,34 @@
 
             </div>
 
+        </div>
+
+        <!-- Nasma Activities Today Table -->
+        <div class="grid grid-cols-1 mb-6">
+            <div id="card-activities-today" class="dashboard-card bg-white rounded-lg shadow-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-orange-600">Nasma activities - today</h2>
+                    <span class="card-drag-handle card-meta cursor-move select-none">Drag</span>
+                </div>
+                
+                <div class="border rounded-lg">
+                    <div class="max-h-64 overflow-y-auto">
+                        <table class="min-w-full text-left">
+                            <thead class="bg-gray-100 text-sm text-gray-700 sticky top-0">
+                                <tr>
+                                    <th class="px-4 py-2">Metric Type</th>
+                                    <th class="px-4 py-2 text-right">Total Requests</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activitiesTableBody" class="text-gray-800 text-sm">
+                                <tr>
+                                    <td colspan="2" class="px-4 py-3 text-center card-meta">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Ease Editor Modal -->

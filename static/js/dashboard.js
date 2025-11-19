@@ -103,6 +103,15 @@ async function loadDashboardData() {
             easeData = easeDataResponse.data;
             renderEaseComparisonChart(easeData);
         }
+
+        // Load activities today
+        const activitiesResponse = await fetch("/api/activities-today");
+        const activitiesData = await activitiesResponse.json();
+        if (activitiesData.success) {
+            renderActivitiesTable(activitiesData.data);
+        } else {
+            renderActivitiesTable([]);
+        }
     } catch (error) {
         console.error("Error loading dashboard data:", error);
     }
@@ -341,17 +350,6 @@ function renderLogHoursTable(data) {
         .map(
             (item, index) => `
                 <tr class="border-t border-gray-100">
-                    <td class="px-4 py-2 text-gray-500">${index + 1}</td>
-                    <td class="px-4 py-2">${item.user_name}</td>
-                </tr>
-            `
-        )
-        .join("");
-}
-
-/**
- * Initialize drag + resize interactions for cards
- */
 function initCardInteractions() {
     if (typeof interact === "undefined") {
         console.warn("Interact.js not loaded; card editing disabled.");
@@ -407,13 +405,13 @@ function initCardInteractions() {
                         let x = parseFloat(target.getAttribute("data-x")) || 0;
                         let y = parseFloat(target.getAttribute("data-y")) || 0;
 
-                        target.style.width = `${event.rect.width}px`;
-                        target.style.height = `${event.rect.height}px`;
+                        target.style.width = `${ event.rect.width }px`;
+                        target.style.height = `${ event.rect.height }px`;
 
                         x += event.deltaRect.left;
                         y += event.deltaRect.top;
 
-                        target.style.transform = `translate(${x}px, ${y}px)`;
+                        target.style.transform = `translate(${ x }px, ${ y }px)`;
                         target.setAttribute("data-x", x);
                         target.setAttribute("data-y", y);
                     },
@@ -444,7 +442,7 @@ function dragMoveListener(event) {
     let x = (parseFloat(target.getAttribute("data-x")) || 0) + event.dx;
     let y = (parseFloat(target.getAttribute("data-y")) || 0) + event.dy;
 
-    target.style.transform = `translate(${x}px, ${y}px)`;
+    target.style.transform = `translate(${ x }px, ${ y }px)`;
     target.setAttribute("data-x", x);
     target.setAttribute("data-y", y);
 }
@@ -470,7 +468,7 @@ function applyCardState(card, state) {
         card.style.height = state.height;
     }
 
-    card.style.transform = `translate(${x}px, ${y}px)`;
+    card.style.transform = `translate(${ x }px, ${ y }px)`;
     card.setAttribute("data-x", x);
     card.setAttribute("data-y", y);
 }
@@ -484,8 +482,8 @@ function persistCardState(card) {
     layout[card.id] = {
         x: parseFloat(card.getAttribute("data-x")) || 0,
         y: parseFloat(card.getAttribute("data-y")) || 0,
-        width: card.style.width || `${card.offsetWidth}px`,
-        height: card.style.height || `${card.offsetHeight}px`,
+        width: card.style.width || `${ card.offsetWidth }px`,
+        height: card.style.height || `${ card.offsetHeight }px`,
     };
 
     try {
@@ -529,7 +527,7 @@ function showEaseEditor() {
  * Populate ease editor with data
  */
 function populateEaseEditor(type, data) {
-    const container = document.getElementById(`${type}DataContainer`);
+    const container = document.getElementById(`${ type }DataContainer`);
     container.innerHTML = "";
 
     if (data.length === 0) {
@@ -545,17 +543,17 @@ function populateEaseEditor(type, data) {
  * Add a data point to ease editor
  */
 function addEaseDataPoint(type, period = "", value = "", index = null) {
-    const container = document.getElementById(`${type}DataContainer`);
+    const container = document.getElementById(`${ type }DataContainer`);
     const div = document.createElement("div");
     div.className = "flex gap-2 mb-2";
     div.innerHTML = `
-        <input 
-            type="text" 
-            placeholder="Period (e.g., Week 1)" 
-            value="${period}"
-            class="flex-1 px-3 py-2 border rounded"
-            data-period
-        />
+        < input 
+            type = "text" 
+            placeholder = "Period (e.g., Week 1)" 
+            value = "${period}"
+            class= "flex-1 px-3 py-2 border rounded"
+            data - period
+            />
         <input 
             type="number" 
             step="0.01"

@@ -365,3 +365,52 @@ class Database:
             print(f"Error saving ease comparison data: {e}")
             return False
 
+    def get_nasma_activities_today(self) -> List[Dict[str, Any]]:
+        """
+        Get count of requests grouped by metric_type for the current day
+        """
+        try:
+            # Use raw SQL for date comparison as it's cleaner than range queries for "today"
+            # Note: This uses the database server's timezone
+            response = self.client.rpc(
+                "get_daily_metrics", {}
+            ).execute()  # If RPC exists, otherwise use client query
+            
+            # Since we can't easily create RPCs from here without migrations, 
+            # let's use the client library to query.
+            # However, Supabase-py client doesn't support complex date filtering easily 
+            # without 'gte' and 'lte' on a timestamp.
+            
+            # Let's try a direct query if possible or fetch and filter (less efficient but safer without raw sql access)
+            # Actually, we can use 'gte' with today's date at 00:00:00
+            
+            today_start = datetime.now().strftime("%Y-%m-%d 00:00:00")
+            
+            # Fetch metrics created today
+            response = (
+                self.client.table(SUPABASE_METRIC_TABLE)
+                .select("metric_type")
+                .gte("created_at", today_start)
+                .execute()
+            )
+            
+            # Count requests by metric_type
+            request_counts = {}
+            for metric in response.data:
+                metric_type = metric.get("metric_type")
+                if metric_type:
+                    request_counts[metric_type] = request_counts.get(metric_type, 0) + 1
+            
+            # Convert to list format
+            result = [
+                {"metric_type": key, "total_requests": count}
+                for key, count in sorted(
+                    request_counts.items(), key=lambda x: x[1], reverse=True
+                )
+            ]
+            
+            return result
+        except Exception as e:
+            print(f"Error fetching today's activities: {e}")
+            return []
+

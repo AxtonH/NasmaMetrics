@@ -110,6 +110,16 @@ def ease_comparison():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@app.route("/api/activities-today")
+def get_activities_today():
+    """API endpoint for Nasma activities today"""
+    try:
+        data = db.get_nasma_activities_today()
+        return jsonify({"success": True, "data": data})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     debug_env = os.environ.get("FLASK_DEBUG", "True")
