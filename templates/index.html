@@ -13,10 +13,16 @@
             --nasma-purple: #7c3aed;
             --nasma-purple-dark: #5c1dbb;
             --nasma-orange: #d76a03;
+            --nasma-bg-dark: #121724;
+            --nasma-surface-dark: #1d2233;
+            --nasma-panel-dark: rgba(19, 23, 36, 0.9);
+            --nasma-text-dark: #f7f3ff;
+            --nasma-text-muted-dark: #bfc7f7;
         }
 
         body {
             background: radial-gradient(circle at top, #fff5ee 0%, #ffd9bf 70%, #f8c9b0 100%);
+            transition: background 0.4s ease, color 0.4s ease;
         }
 
         .dashboard-shell {
@@ -61,15 +67,133 @@
             margin: 0;
         }
 
+        .filter-panel {
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.75);
+            border: 1px solid rgba(124, 58, 237, 0.15);
+            box-shadow: 0 4px 16px rgba(92, 29, 187, 0.05);
+            padding: 0.75rem 1.25rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-group label {
+            font-size: 0.85rem;
+            color: #6b6b6b;
+        }
+
+        .filter-input {
+            border-radius: 10px;
+            border: 1px solid rgba(124, 58, 237, 0.25);
+            padding: 0.35rem 0.65rem;
+            font-size: 0.9rem;
+            min-width: 140px;
+            background: rgba(255, 255, 255, 0.85);
+        }
+
+        .filter-actions button {
+            border-radius: 10px;
+            padding: 0.4rem 1rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .theme-toggle button {
+            border-radius: 999px;
+            padding: 0.35rem 0.9rem;
+            font-size: 0.85rem;
+            background: rgba(124, 58, 237, 0.1);
+            color: #5c1dbb;
+            border: 1px solid rgba(124, 58, 237, 0.3);
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        .theme-toggle button:hover {
+            background: rgba(124, 58, 237, 0.2);
+        }
+
+        body.dark-mode {
+            background: radial-gradient(circle at top, #1b2140 0%, #111628 70%, #0d111f 100%);
+            color: var(--nasma-text-dark);
+        }
+
+        body.dark-mode .dashboard-shell {
+            background: rgba(18, 23, 36, 0.92);
+            border-color: rgba(255, 255, 255, 0.06);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+        }
+
+        body.dark-mode .dashboard-card {
+            background: linear-gradient(160deg, #1f2944, #161d30);
+            border-color: rgba(255, 255, 255, 0.08);
+            color: var(--nasma-text-dark);
+        }
+
+        body.dark-mode .filter-panel {
+            background: rgba(21, 26, 41, 0.95);
+            border-color: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+        }
+
+        body.dark-mode .filter-group label,
+        body.dark-mode .card-meta,
+        body.dark-mode #activeFilterLabel {
+            color: var(--nasma-text-muted-dark);
+        }
+
+        body.dark-mode .filter-input {
+            background: rgba(255, 255, 255, 0.03);
+            border-color: rgba(255, 255, 255, 0.18);
+            color: var(--nasma-text-dark);
+        }
+        body.dark-mode table,
+        body.dark-mode th,
+        body.dark-mode td {
+            color: var(--nasma-text-dark);
+        }
+
+        body.dark-mode .filter-actions button:first-child {
+            background: linear-gradient(120deg, #7c3aed, #9f5cf0);
+            color: #fff;
+        }
+
+        body.dark-mode .filter-actions button:last-child {
+            background: rgba(255, 255, 255, 0.12);
+            color: var(--nasma-text-dark);
+        }
+
+        body.dark-mode .theme-toggle button {
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--nasma-text-dark);
+            border-color: rgba(255, 255, 255, 0.35);
+        }
+
 
 
         .dashboard-card h2 {
             color: var(--nasma-orange);
         }
 
+        body.dark-mode .dashboard-card h2 {
+            color: #f5b052;
+        }
+
         .highlight-value {
             color: var(--nasma-purple-dark);
             text-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+        }
+
+        body.dark-mode .highlight-value {
+            color: #d7b7ff;
+            text-shadow: none;
         }
 
         .chart-wrapper {
@@ -89,6 +213,31 @@
         <h1 class="text-center text-4xl md:text-6xl font-extrabold text-purple-800 tracking-wide drop-shadow-lg">
             Nasma Metrics Dashboard
         </h1>
+
+        <div class="filter-panel">
+            <div class="filter-group">
+                <label for="filterStartDate">From</label>
+                <input type="date" id="filterStartDate" class="filter-input" />
+            </div>
+            <div class="filter-group">
+                <label for="filterEndDate">To</label>
+                <input type="date" id="filterEndDate" class="filter-input" />
+            </div>
+            <div class="flex gap-2 filter-actions">
+                <button id="applyFiltersBtn" class="bg-purple-600 text-white hover:bg-purple-700 transition-colors">
+                    Apply
+                </button>
+                <button id="clearFiltersBtn" class="bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors">
+                    Clear
+                </button>
+            </div>
+            <div class="theme-toggle ml-auto">
+                <button id="themeToggle" aria-label="Toggle theme"><span id="themeIcon">🌙</span></button>
+            </div>
+            <p id="activeFilterLabel" class="text-sm text-gray-600">
+                Showing all available data
+            </p>
+        </div>
         
         <!-- Summary Cards -->
 
@@ -222,13 +371,7 @@
 
                     <h2 class="text-xl font-semibold text-orange-600">Ease of Nasma VS Odoo</h2>
 
-                    <div class="flex items-center gap-4">
-
-                        <span class="card-drag-handle card-meta cursor-move select-none">Drag</span>
-
-                        <button onclick="showEaseEditor()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">Edit Data</button>
-
-                    </div>
+                    <span class="card-drag-handle card-meta cursor-move select-none">Drag</span>
 
                 </div>
 
@@ -257,8 +400,6 @@
                     <span class="card-drag-handle card-meta cursor-move select-none">Drag</span>
 
                 </div>
-
-                <p class="card-meta mb-4">Distinct users who asked Nasma to log their hours (filtered like messages card)</p>
 
                 <div class="border rounded-lg">
 
@@ -302,7 +443,9 @@
         <div class="grid grid-cols-1 mb-6">
             <div id="card-activities-today" class="dashboard-card bg-white rounded-lg shadow-lg p-6">
                 <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-semibold text-orange-600">Nasma activities - today</h2>
+                    <h2 class="text-xl font-semibold text-orange-600">
+                        Nasma activities - <span id="activitiesRangeLabel">today</span>
+                    </h2>
                     <span class="card-drag-handle card-meta cursor-move select-none">Drag</span>
                 </div>
                 
@@ -311,13 +454,14 @@
                         <table class="min-w-full text-left">
                             <thead class="bg-gray-100 text-sm text-gray-700 sticky top-0">
                                 <tr>
+                                    <th class="px-4 py-2">User name</th>
                                     <th class="px-4 py-2">Metric Type</th>
-                                    <th class="px-4 py-2 text-right">Total Requests</th>
+                                    <th class="px-4 py-2 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="activitiesTableBody" class="text-gray-800 text-sm">
                                 <tr>
-                                    <td colspan="2" class="px-4 py-3 text-center card-meta">Loading...</td>
+                                    <td colspan="3" class="px-4 py-3 text-center card-meta">Loading...</td>
                                 </tr>
                             </tbody>
                         </table>

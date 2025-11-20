@@ -23,36 +23,177 @@ const isAdminView =
 let easeData = { odoo: [], nasma: [] };
 
 const CARD_LAYOUT_STORAGE_KEY = "nasma-dashboard-card-layout";
+const THEME_STORAGE_KEY = "nasma-theme";
+const dashboardFilters = {
+    start: null,
+    end: null,
+};
 
 /**
  * Initialize dashboard on page load
  */
 document.addEventListener("DOMContentLoaded", function () {
     initCardInteractions();
+    initFilterControls();
+    updateFilterLabel();
+    initThemeToggle();
     loadDashboardData();
 });
+
+function initFilterControls() {
+    const startInput = document.getElementById("filterStartDate");
+    const endInput = document.getElementById("filterEndDate");
+    const applyBtn = document.getElementById("applyFiltersBtn");
+    const clearBtn = document.getElementById("clearFiltersBtn");
+
+    if (!startInput || !endInput || !applyBtn || !clearBtn) {
+        return;
+    }
+
+    applyBtn.addEventListener("click", () => {
+        const startValue = startInput.value || null;
+        const endValue = endInput.value || null;
+
+        if (startValue && endValue && startValue > endValue) {
+            alert("Start date must be before end date.");
+            return;
+        }
+
+        dashboardFilters.start = startValue;
+        dashboardFilters.end = endValue;
+        updateFilterLabel();
+        loadDashboardData();
+    });
+
+    clearBtn.addEventListener("click", () => {
+        startInput.value = "";
+        endInput.value = "";
+        dashboardFilters.start = null;
+        dashboardFilters.end = null;
+        updateFilterLabel();
+        loadDashboardData();
+    });
+}
+
+function buildFilterQuery() {
+    const params = new URLSearchParams();
+    if (dashboardFilters.start) {
+        params.append("start_date", dashboardFilters.start);
+    }
+    if (dashboardFilters.end) {
+        params.append("end_date", dashboardFilters.end);
+    }
+    const query = params.toString();
+    return query ? `?${query}` : "";
+}
+
+function formatDateLabel(value) {
+    if (!value) {
+        return "";
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return value;
+    }
+    return date.toLocaleDateString();
+}
+
+function getFilterDescriptions() {
+    if (!dashboardFilters.start && !dashboardFilters.end) {
+        return {
+            summaryText: "Showing all available data",
+            rangeText: "today",
+        };
+    }
+
+    const startText = dashboardFilters.start
+        ? formatDateLabel(dashboardFilters.start)
+        : "Beginning";
+    const endText = dashboardFilters.end
+        ? formatDateLabel(dashboardFilters.end)
+        : "Present";
+
+    const rangeText =
+        dashboardFilters.start && dashboardFilters.end
+            ? `${startText} – ${endText}`
+            : dashboardFilters.start
+            ? `since ${startText}`
+            : `until ${endText}`;
+
+    return {
+        summaryText: `Showing data from ${startText} to ${endText}`,
+        rangeText,
+    };
+}
+
+function updateFilterLabel() {
+    const descriptions = getFilterDescriptions();
+    const filterLabel = document.getElementById("activeFilterLabel");
+    if (filterLabel) {
+        filterLabel.textContent = descriptions.summaryText;
+    }
+    const activitiesLabel = document.getElementById("activitiesRangeLabel");
+    if (activitiesLabel) {
+        activitiesLabel.textContent = descriptions.rangeText;
+    }
+}
+
+function initThemeToggle() {
+    const toggleBtn = document.getElementById("themeToggle");
+    if (!toggleBtn) {
+        return;
+    }
+
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || "light";
+    applyTheme(savedTheme);
+
+    toggleBtn.addEventListener("click", () => {
+        const newTheme = document.body.classList.contains("dark-mode") ? "light" : "dark";
+        applyTheme(newTheme);
+        localStorage.setItem(THEME_STORAGE_KEY, newTheme);
+    });
+}
+
+function applyTheme(theme) {
+    const body = document.body;
+    if (theme === "dark") {
+        body.classList.add("dark-mode");
+    } else {
+        body.classList.remove("dark-mode");
+    }
+
+    const toggleBtn = document.getElementById("themeToggle");
+    if (toggleBtn) {
+        const iconEl = document.getElementById("themeIcon");
+        if (iconEl) {
+            iconEl.textContent = theme === "dark" ? "☀️" : "🌙";
+        }
+    }
+}
 
 /**
  * Load all dashboard data from API
  */
 async function loadDashboardData() {
     try {
+        const query = buildFilterQuery();
+
         // Load active users
-        const activeUsersResponse = await fetch("/api/active-users");
+        const activeUsersResponse = await fetch(`/api/active-users${query}`);
         const activeUsersData = await activeUsersResponse.json();
         if (activeUsersData.success) {
             renderActiveUsersChart(activeUsersData.data);
         }
 
         // Load requests
-        const requestsResponse = await fetch("/api/requests");
+        const requestsResponse = await fetch(`/api/requests${query}`);
         const requestsData = await requestsResponse.json();
         if (requestsData.success) {
             renderRequestsChart(requestsData.data);
         }
 
         // Load adoption
-        const adoptionResponse = await fetch("/api/adoption");
+        const adoptionResponse = await fetch(`/api/adoption${query}`);
         const adoptionData = await adoptionResponse.json();
         if (adoptionData.success) {
             document.getElementById("adoptionCount").textContent =
@@ -60,7 +201,7 @@ async function loadDashboardData() {
         }
 
         // Load messages
-        const messagesResponse = await fetch("/api/messages");
+        const messagesResponse = await fetch(`/api/messages${query}`);
         const messagesData = await messagesResponse.json();
         if (messagesData.success) {
             const total = messagesData.data.total_messages ?? "-";
@@ -71,12 +212,20 @@ async function loadDashboardData() {
         }
 
         // Load log hours users
-        const logHoursResponse = await fetch("/api/log-hours");
+        const logHoursResponse = await fetch(`/api/log-hours${query}`);
         const logHoursData = await logHoursResponse.json();
         if (logHoursData.success) {
             renderLogHoursTable(logHoursData.data);
         } else {
             renderLogHoursTable([]);
+        }
+
+        const activitiesResponse = await fetch(`/api/activities-today${query}`);
+        const activitiesData = await activitiesResponse.json();
+        if (activitiesData.success) {
+            renderActivitiesTable(activitiesData.data);
+        } else {
+            renderActivitiesTable([]);
         }
 
         // Load satisfaction
@@ -104,14 +253,6 @@ async function loadDashboardData() {
             renderEaseComparisonChart(easeData);
         }
 
-        // Load activities today
-        const activitiesResponse = await fetch("/api/activities-today");
-        const activitiesData = await activitiesResponse.json();
-        if (activitiesData.success) {
-            renderActivitiesTable(activitiesData.data);
-        } else {
-            renderActivitiesTable([]);
-        }
     } catch (error) {
         console.error("Error loading dashboard data:", error);
     }
@@ -338,7 +479,7 @@ function renderLogHoursTable(data) {
     if (!data || data.length === 0) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="2" class="px-4 py-3 text-center text-gray-500">
+                <td colspan="3" class="px-4 py-3 text-center text-gray-500">
                     No log hours activity found
                 </td>
             </tr>
@@ -350,6 +491,52 @@ function renderLogHoursTable(data) {
         .map(
             (item, index) => `
                 <tr class="border-t border-gray-100">
+                    <td class="px-4 py-2 text-gray-500">${index + 1}</td>
+                    <td class="px-4 py-2">${item.user_name}</td>
+                </tr>
+            `
+        )
+        .join("");
+}
+
+function renderActivitiesTable(data) {
+    const tableBody = document.getElementById("activitiesTableBody");
+    if (!tableBody) {
+        return;
+    }
+
+    const { rangeText } = getFilterDescriptions();
+    const readableRange =
+        rangeText === "today"
+            ? "today"
+            : rangeText.includes("–")
+            ? `between ${rangeText}`
+            : rangeText;
+
+    if (!data || data.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="3" class="px-4 py-3 text-center text-gray-500">
+                    No activities recorded ${readableRange}
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tableBody.innerHTML = data
+        .map(
+            (item) => `
+                <tr class="border-t border-gray-100">
+                    <td class="px-4 py-3 font-medium text-gray-800">${item.user_name}</td>
+                    <td class="px-4 py-3">${item.metric_type}</td>
+                    <td class="px-4 py-3 text-right font-bold text-purple-600">${item.actions_today}</td>
+                </tr>
+            `
+        )
+        .join("");
+}
+
 function initCardInteractions() {
     if (typeof interact === "undefined") {
         console.warn("Interact.js not loaded; card editing disabled.");

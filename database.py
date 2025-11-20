@@ -23,7 +23,9 @@ class Database:
         """Initialize Supabase client"""
         self.client: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE)
 
-    def get_active_users_by_month(self) -> List[Dict[str, Any]]:
+    def get_active_users_by_month(
+        self, start_date: str = None, end_date: str = None
+    ) -> List[Dict[str, Any]]:
         """
         Get monthly active users calculated from chat_messages (role=user)
         Mirrors adoption query logic but returns month and active user counts only
@@ -39,8 +41,17 @@ class Database:
                     self.client.table(SUPABASE_MESSAGE_TABLE)
                     .select("metadata, created_at, role")
                     .eq("role", "user")
-                    .range(start, start + page_size - 1)
                 )
+                if start_date:
+                    query = query.gte("created_at", start_date)
+                if end_date:
+                    # Append time to end_date to include the whole day if it's just a date
+                    if len(end_date) == 10:
+                        query = query.lte("created_at", f"{end_date} 23:59:59")
+                    else:
+                        query = query.lte("created_at", end_date)
+                
+                query = query.range(start, start + page_size - 1)
                 response = query.execute()
                 batch = response.data or []
                 if not batch:
@@ -91,18 +102,27 @@ class Database:
             print(f"Error fetching active users: {e}")
             return []
 
-    def get_all_time_requests(self) -> List[Dict[str, Any]]:
+    def get_all_time_requests(
+        self, start_date: str = None, end_date: str = None
+    ) -> List[Dict[str, Any]]:
         """
         Get all-time requests grouped by metric_type from session_metrics table
         Returns list of dictionaries with metric_type and count
         """
         try:
-            # Fetch all session metrics
-            response = (
-                self.client.table(SUPABASE_METRIC_TABLE)
-                .select("metric_type")
-                .execute()
+            # Fetch all session metrics with optional date filtering
+            query = self.client.table(SUPABASE_METRIC_TABLE).select(
+                "metric_type, created_at"
             )
+            if start_date:
+                query = query.gte("created_at", start_date)
+            if end_date:
+                if len(end_date) == 10:
+                    query = query.lte("created_at", f"{end_date} 23:59:59")
+                else:
+                    query = query.lte("created_at", end_date)
+
+            response = query.execute()
 
             # Count requests by metric_type
             request_counts = {}
@@ -124,16 +144,24 @@ class Database:
             print(f"Error fetching requests: {e}")
             return []
 
-    def get_nasma_adoption(self) -> int:
+    def get_nasma_adoption(self, start_date: str = None, end_date: str = None) -> int:
         """
         Get total number of active users (Nasma Adoption)
         Returns count of unique users from refresh_tokens
         """
         try:
             # Fetch all refresh tokens and count unique usernames
-            response = self.client.table(SUPABASE_REFRESH_TOKEN_TABLE).select(
-                "username"
-            ).execute()
+            query = self.client.table(SUPABASE_REFRESH_TOKEN_TABLE).select("username")
+            
+            if start_date:
+                query = query.gte("created_at", start_date)
+            if end_date:
+                if len(end_date) == 10:
+                    query = query.lte("created_at", f"{end_date} 23:59:59")
+                else:
+                    query = query.lte("created_at", end_date)
+                    
+            response = query.execute()
 
             unique_users = set()
             for token in response.data:
@@ -145,7 +173,9 @@ class Database:
             print(f"Error fetching Nasma adoption: {e}")
             return 0
 
-    def get_monthly_messages_summary(self) -> Dict[str, List[Dict[str, Any]]]:
+    def get_monthly_messages_summary(
+        self, start_date: str = None, end_date: str = None
+    ) -> Dict[str, List[Dict[str, Any]]]:
         """
         Build monthly totals and per-user message counts matching the requested SQL.
         Filters to role='user', requires user_name, and excludes specific substrings.
@@ -156,13 +186,20 @@ class Database:
             all_messages = []
 
             while True:
-                response = (
+                query = (
                     self.client.table(SUPABASE_MESSAGE_TABLE)
                     .select("metadata, created_at, role")
                     .eq("role", "user")
-                    .range(start, start + page_size - 1)
-                    .execute()
                 )
+                if start_date:
+                    query = query.gte("created_at", start_date)
+                if end_date:
+                    if len(end_date) == 10:
+                        query = query.lte("created_at", f"{end_date} 23:59:59")
+                    else:
+                        query = query.lte("created_at", end_date)
+
+                response = query.range(start, start + page_size - 1).execute()
                 batch = response.data or []
                 if not batch:
                     break
@@ -234,7 +271,7 @@ class Database:
             print(f"Error fetching messages summary: {e}")
             return {"monthly_totals": [], "user_breakdown": [], "total_messages": 0}
 
-    def get_log_hours_users(self) -> List[Dict[str, str]]:
+    def get_log_hours_users(self, start_date: str = None, end_date: str = None) -> List[Dict[str, str]]:
         """
         Get distinct users who asked Nasma to log their hours by mirroring the Supabase SQL.
         Uses server-side filters (content ilike + username exclusions) to ensure parity.
@@ -253,8 +290,16 @@ class Database:
                         .select("metadata, content")
                         .eq("role", "user")
                         .ilike("content", pattern)
-                        .range(start, start + page_size - 1)
                     )
+                    if start_date:
+                        query = query.gte("created_at", start_date)
+                    if end_date:
+                        if len(end_date) == 10:
+                            query = query.lte("created_at", f"{end_date} 23:59:59")
+                        else:
+                            query = query.lte("created_at", end_date)
+                            
+                    query = query.range(start, start + page_size - 1)
 
                     response = query.execute()
                     batch = response.data or []
@@ -365,50 +410,63 @@ class Database:
             print(f"Error saving ease comparison data: {e}")
             return False
 
-    def get_nasma_activities_today(self) -> List[Dict[str, Any]]:
+    def get_nasma_activities_today(
+        self, start_date: str = None, end_date: str = None
+    ) -> List[Dict[str, Any]]:
         """
-        Get count of requests grouped by metric_type for the current day
+        Get per-user request counts grouped by metric_type.
+        Defaults to today's activity when no dates supplied.
         """
         try:
-            # Use raw SQL for date comparison as it's cleaner than range queries for "today"
-            # Note: This uses the database server's timezone
-            response = self.client.rpc(
-                "get_daily_metrics", {}
-            ).execute()  # If RPC exists, otherwise use client query
-            
-            # Since we can't easily create RPCs from here without migrations, 
-            # let's use the client library to query.
-            # However, Supabase-py client doesn't support complex date filtering easily 
-            # without 'gte' and 'lte' on a timestamp.
-            
-            # Let's try a direct query if possible or fetch and filter (less efficient but safer without raw sql access)
-            # Actually, we can use 'gte' with today's date at 00:00:00
-            
-            today_start = datetime.now().strftime("%Y-%m-%d 00:00:00")
-            
-            # Fetch metrics created today
-            response = (
-                self.client.table(SUPABASE_METRIC_TABLE)
-                .select("metric_type")
-                .gte("created_at", today_start)
-                .execute()
+            query = self.client.table(SUPABASE_METRIC_TABLE).select(
+                "user_name, metric_type, created_at"
             )
-            
-            # Count requests by metric_type
-            request_counts = {}
-            for metric in response.data:
-                metric_type = metric.get("metric_type")
-                if metric_type:
-                    request_counts[metric_type] = request_counts.get(metric_type, 0) + 1
-            
-            # Convert to list format
+
+            if start_date or end_date:
+                if start_date:
+                    query = query.gte("created_at", start_date)
+                if end_date:
+                    if len(end_date) == 10:
+                        query = query.lte("created_at", f"{end_date} 23:59:59")
+                    else:
+                        query = query.lte("created_at", end_date)
+            else:
+                utc_now = datetime.utcnow()
+                start_of_day = utc_now.replace(hour=0, minute=0, second=0, microsecond=0)
+                end_of_day = start_of_day.replace(hour=23, minute=59, second=59)
+                query = query.gte(
+                    "created_at", start_of_day.strftime("%Y-%m-%d %H:%M:%S")
+                ).lte("created_at", end_of_day.strftime("%Y-%m-%d %H:%M:%S"))
+
+            response = query.execute()
+
+            excluded = {
+                "Omar Basem Elhasan",
+                "Saba S. F. Abuhouran Dababneh",
+                "Sanad Feras Khaleel Zaqtan",
+            }
+
+            counts: Dict[tuple, int] = {}
+            for row in response.data or []:
+                user = row.get("user_name")
+                metric_type = row.get("metric_type")
+                if not user or not metric_type:
+                    continue
+                if user in excluded:
+                    continue
+                key = (user, metric_type)
+                counts[key] = counts.get(key, 0) + 1
+
             result = [
-                {"metric_type": key, "total_requests": count}
-                for key, count in sorted(
-                    request_counts.items(), key=lambda x: x[1], reverse=True
+                {
+                    "user_name": user,
+                    "metric_type": metric,
+                    "actions_today": count,
+                }
+                for (user, metric), count in sorted(
+                    counts.items(), key=lambda item: (item[0][0].lower(), -item[1])
                 )
             ]
-            
             return result
         except Exception as e:
             print(f"Error fetching today's activities: {e}")
