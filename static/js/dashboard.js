@@ -78,13 +78,29 @@ function initFilterControls() {
 function buildFilterQuery() {
     const params = new URLSearchParams();
     if (dashboardFilters.start) {
-        params.append("start_date", dashboardFilters.start);
+        params.append("start_date", formatDateForQuery(dashboardFilters.start));
     }
     if (dashboardFilters.end) {
-        params.append("end_date", dashboardFilters.end);
+        params.append("end_date", formatDateForQuery(dashboardFilters.end, true));
     }
     const query = params.toString();
     return query ? `?${query}` : "";
+}
+
+function formatDateForQuery(value, endOfDay = false) {
+    if (!value) {
+        return value;
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return value;
+    }
+    if (endOfDay) {
+        date.setHours(23, 59, 59, 999);
+    } else {
+        date.setHours(0, 0, 0, 0);
+    }
+    return date.toISOString();
 }
 
 function formatDateLabel(value) {
@@ -115,7 +131,7 @@ function getFilterDescriptions() {
 
     const rangeText =
         dashboardFilters.start && dashboardFilters.end
-            ? `${startText} – ${endText}`
+            ? `${startText} - ${endText}`
             : dashboardFilters.start
             ? `since ${startText}`
             : `until ${endText}`;
@@ -499,44 +515,44 @@ function renderLogHoursTable(data) {
         .join("");
 }
 
-function renderActivitiesTable(data) {
-    const tableBody = document.getElementById("activitiesTableBody");
-    if (!tableBody) {
-        return;
-    }
-
-    const { rangeText } = getFilterDescriptions();
-    const readableRange =
-        rangeText === "today"
-            ? "today"
-            : rangeText.includes("–")
-            ? `between ${rangeText}`
-            : rangeText;
-
-    if (!data || data.length === 0) {
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="3" class="px-4 py-3 text-center text-gray-500">
-                    No activities recorded ${readableRange}
-                </td>
-            </tr>
-        `;
-        return;
-    }
-
-    tableBody.innerHTML = data
-        .map(
-            (item) => `
-                <tr class="border-t border-gray-100">
-                    <td class="px-4 py-3 font-medium text-gray-800">${item.user_name}</td>
-                    <td class="px-4 py-3">${item.metric_type}</td>
-                    <td class="px-4 py-3 text-right font-bold text-purple-600">${item.actions_today}</td>
-                </tr>
-            `
-        )
-        .join("");
-}
-
+function renderActivitiesTable(data) {
+    const tableBody = document.getElementById("activitiesTableBody");
+    if (!tableBody) {
+        return;
+    }
+
+    const { rangeText } = getFilterDescriptions();
+    const readableRange =
+        rangeText === "today"
+            ? "today"
+            : rangeText.includes("-")
+            ? `between ${rangeText}`
+            : rangeText;
+
+    if (!data || data.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="3" class="px-4 py-3 text-center text-gray-500">
+                    No activities recorded ${readableRange}
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tableBody.innerHTML = data
+        .map(
+            (item) => `
+                <tr class="border-t border-gray-100">
+                    <td class="px-4 py-3 font-medium text-gray-800">${item.user_name}</td>
+                    <td class="px-4 py-3">${item.metric_type}</td>
+                    <td class="px-4 py-3 text-right font-bold text-purple-600">${item.actions_today}</td>
+                </tr>
+            `
+        )
+        .join("");
+}
+
 function initCardInteractions() {
     if (typeof interact === "undefined") {
         console.warn("Interact.js not loaded; card editing disabled.");
