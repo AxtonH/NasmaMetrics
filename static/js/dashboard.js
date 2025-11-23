@@ -525,7 +525,7 @@ function renderActivitiesTable(data) {
     const readableRange =
         rangeText === "today"
             ? "today"
-            : rangeText.includes("-")
+            : rangeText.includes("–")
             ? `between ${rangeText}`
             : rangeText;
 
@@ -842,4 +842,5 @@ async function saveEaseData() {
         alert("Error saving ease comparison data");
     }
 }
+
 
