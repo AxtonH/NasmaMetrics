@@ -25,7 +25,9 @@ def index():
 def get_active_users():
     """API endpoint for active users by month"""
     try:
-        data = db.get_active_users_by_month()
+        start_date = request.args.get("start_date")
+        end_date = request.args.get("end_date")
+        data = db.get_active_users_by_month(start_date, end_date)
         return jsonify({"success": True, "data": data})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
@@ -35,7 +37,9 @@ def get_active_users():
 def get_requests():
     """API endpoint for all-time requests"""
     try:
-        data = db.get_all_time_requests()
+        start_date = request.args.get("start_date")
+        end_date = request.args.get("end_date")
+        data = db.get_all_time_requests(start_date, end_date)
         return jsonify({"success": True, "data": data})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
@@ -45,7 +49,9 @@ def get_requests():
 def get_adoption():
     """API endpoint for Nasma adoption count"""
     try:
-        count = db.get_nasma_adoption()
+        start_date = request.args.get("start_date")
+        end_date = request.args.get("end_date")
+        count = db.get_nasma_adoption(start_date, end_date)
         return jsonify({"success": True, "data": {"count": count}})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
@@ -55,7 +61,9 @@ def get_adoption():
 def get_messages():
     """API endpoint for messages count"""
     try:
-        summary = db.get_monthly_messages_summary()
+        start_date = request.args.get("start_date")
+        end_date = request.args.get("end_date")
+        summary = db.get_monthly_messages_summary(start_date, end_date)
         return jsonify({"success": True, "data": summary})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
@@ -65,7 +73,9 @@ def get_messages():
 def get_log_hours_users():
     """API endpoint for users who logged hours via Nasma"""
     try:
-        data = db.get_log_hours_users()
+        start_date = request.args.get("start_date")
+        end_date = request.args.get("end_date")
+        data = db.get_log_hours_users(start_date, end_date)
         return jsonify({"success": True, "data": data})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
@@ -114,7 +124,9 @@ def ease_comparison():
 def get_activities_today():
     """API endpoint for Nasma activities today"""
     try:
-        data = db.get_nasma_activities_today()
+        start_date = request.args.get("start_date")
+        end_date = request.args.get("end_date")
+        data = db.get_nasma_activities_today(start_date, end_date)
         return jsonify({"success": True, "data": data})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
