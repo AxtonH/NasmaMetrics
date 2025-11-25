@@ -143,30 +143,16 @@ function formatWeekLabel(period) {
     }
     const year = Number(match[1]);
     const week = Number(match[2]);
-    const startDate = getIsoWeekStartDate(year, week);
-    if (!startDate) {
+    if (!Number.isFinite(year) || !Number.isFinite(week)) {
         return period;
     }
-    const formatted = startDate.toLocaleDateString(undefined, {
+    const startDate = new Date(Date.UTC(year, 0, 4));
+    const dayOfWeek = startDate.getUTCDay() || 7;
+    startDate.setUTCDate(startDate.getUTCDate() - dayOfWeek + 1 + (week - 1) * 7);
+    return startDate.toLocaleDateString(undefined, {
         month: "short",
         day: "numeric",
     });
-    return `Week of ${ formatted }`;
-}
-
-function getIsoWeekStartDate(year, week) {
-    if (!Number.isFinite(year) || !Number.isFinite(week)) {
-        return null;
-    }
-    const simple = new Date(Date.UTC(year, 0, 4));
-    const dayOfWeek = simple.getUTCDay() || 7;
-    const isoWeekStart = new Date(simple);
-    isoWeekStart.setUTCDate(simple.getUTCDate() - dayOfWeek + 1 + (week - 1) * 7);
-    return new Date(
-        isoWeekStart.getUTCFullYear(),
-        isoWeekStart.getUTCMonth(),
-        isoWeekStart.getUTCDate(),
-    );
 }
 
 function getFilterDescriptions() {
@@ -329,54 +315,6 @@ async function loadDashboardData() {
     }
 }
 
-function initPlanningCoverageControls() {
-    const select = document.getElementById("planningCoverageView");
-    if (!select) {
-        return;
-    }
-    select.addEventListener("change", () => {
-        renderPlanningCoverageChart(select.value);
-    });
-}
-
-/**
- * Load planning coverage data
- */
-async function loadPlanningCoverage() {
-    const canvas = document.getElementById("planningCoverageChart");
-    if (!canvas) {
-        return;
-    }
-
-    try {
-        const response = await fetch("/api/odoo/planning-coverage");
-        const payload = await response.json();
-        if (payload && payload.ok) {
-            const data = payload.data || {};
-            planningCoverageData = {
-                monthly: Array.isArray(data.monthly) ? data.monthly : [],
-                weekly: Array.isArray(data.weekly) ? data.weekly : [],
-            };
-            const viewSelect = document.getElementById("planningCoverageView");
-            const selectedView = viewSelect ? viewSelect.value : "monthly";
-            renderPlanningCoverageChart(selectedView);
-        } else {
-            planningCoverageData = { monthly: [], weekly: [] };
-            renderPlanningCoverageChart("monthly");
-        }
-    } catch (error) {
-        console.error("Error loading planning coverage:", error);
-        planningCoverageData = { monthly: [], weekly: [] };
-        renderPlanningCoverageChart("monthly");
-    }
-}
-
-/**
- * Fetch and render Odoo monthly hours chart
- */
-/**
- * Render Active Users Bar Chart
- */
 function renderActiveUsersChart(data) {
     const ctx = document.getElementById("activeUsersChart").getContext("2d");
 
@@ -483,88 +421,6 @@ function renderRequestsChart(data) {
             plugins: {
                 legend: {
                     display: false,
-                },
-            },
-        },
-    });
-}
-
-/**
- * Render planning coverage chart for selected view
- */
-function renderPlanningCoverageChart(view = "monthly") {
-    const canvas = document.getElementById("planningCoverageChart");
-    if (!canvas) {
-        return;
-    }
-
-    const ctx = canvas.getContext("2d");
-    const dataset = planningCoverageData[view] || [];
-    const trimmed = dataset.slice(-6);
-
-    if (planningCoverageChart) {
-        planningCoverageChart.destroy();
-    }
-
-    if (!trimmed.length) {
-        return;
-    }
-
-    const labels = trimmed.map((entry) =>
-        view === "monthly" ? formatMonthShort(entry.period) : formatWeekLabel(entry.period),
-    );
-    const values = trimmed.map((entry) =>
-        typeof entry.coverage_pct === "number" ? Number(entry.coverage_pct.toFixed(2)) : 0,
-    );
-
-    planningCoverageChart = new Chart(ctx, {
-        type: "bar",
-        data: {
-            labels,
-            datasets: [
-                {
-                    label: "Planned vs Logged %",
-                    data: values,
-                    backgroundColor: NASMA_COLORS.orangeSoft,
-                    borderColor: NASMA_COLORS.orangeSolid,
-                    borderWidth: 1,
-                },
-            ],
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    suggestedMax: 100,
-                    title: {
-                        display: true,
-                        text: "Planned vs Logged %",
-                    },
-                },
-                x: {
-                    title: {
-                        display: true,
-                        text: view === "monthly" ? "Month" : "Week",
-                    },
-                },
-            },
-            plugins: {
-                legend: {
-                    display: false,
-                },
-                tooltip: {
-                    callbacks: {
-                        afterBody(context) {
-                            const index = context[0].dataIndex;
-                            const entry = trimmed[index];
-                            if (!entry) {
-                                return "";
-                            }
-                            return `Planned: ${ entry.planned_days } | Logged: ${ entry.logged_days }`;
-                        },
-                    },
                 },
             },
         },
@@ -1026,3 +882,132 @@ async function saveEaseData() {
 }
 
 
+function initPlanningCoverageControls() {
+    const select = document.getElementById("planningCoverageView");
+    if (!select) {
+        return;
+    }
+    select.addEventListener("change", () => {
+        renderPlanningCoverageChart(select.value);
+    });
+}
+
+/**
+ * Load planning coverage data
+ */
+async function loadPlanningCoverage() {
+    const canvas = document.getElementById("planningCoverageChart");
+    if (!canvas) {
+        return;
+    }
+
+    try {
+        const response = await fetch("/api/odoo/planning-coverage");
+        const payload = await response.json();
+        if (payload && payload.ok) {
+            const data = payload.data || {};
+            planningCoverageData = {
+                monthly: Array.isArray(data.monthly) ? data.monthly : [],
+                weekly: Array.isArray(data.weekly) ? data.weekly : [],
+            };
+            const viewSelect = document.getElementById("planningCoverageView");
+            const selectedView = viewSelect ? viewSelect.value : "monthly";
+            renderPlanningCoverageChart(selectedView);
+        } else {
+            planningCoverageData = { monthly: [], weekly: [] };
+            renderPlanningCoverageChart("monthly");
+        }
+    } catch (error) {
+        console.error("Error loading planning coverage:", error);
+        planningCoverageData = { monthly: [], weekly: [] };
+        renderPlanningCoverageChart("monthly");
+    }
+}
+
+/**
+ * Render planning coverage chart for selected view
+ */
+function renderPlanningCoverageChart(view = "monthly") {
+    const canvas = document.getElementById("planningCoverageChart");
+    if (!canvas) {
+        return;
+    }
+
+    const ctx = canvas.getContext("2d");
+    const dataset = planningCoverageData[view] || [];
+    const limit = view === "monthly" ? 12 : 20;
+    const trimmed = dataset.slice(-limit);
+
+    if (planningCoverageChart) {
+        planningCoverageChart.destroy();
+    }
+
+    if (!trimmed.length) {
+        return;
+    }
+
+    const labels = trimmed.map((entry) =>
+        view === "monthly" ? formatMonthShort(entry.period) : formatWeekLabel(entry.period),
+    );
+    const values = trimmed.map((entry) =>
+        typeof entry.coverage_pct === "number" ? Number(entry.coverage_pct.toFixed(2)) : 0,
+    );
+
+    planningCoverageChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: "Planned vs Logged %",
+                    data: values,
+                    backgroundColor: NASMA_COLORS.orangeSoft,
+                    borderColor: NASMA_COLORS.orangeSolid,
+                    borderWidth: 1,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    suggestedMax: 100,
+                    title: {
+                        display: true,
+                        text: "Planned vs Logged %",
+                    },
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: view === "monthly" ? "Month" : "Week",
+                    },
+                },
+            },
+            plugins: {
+                legend: {
+                    display: false,
+                },
+                tooltip: {
+                    callbacks: {
+                        afterBody(context) {
+                            const index = context[0].dataIndex;
+                            const entry = trimmed[index];
+                            if (!entry) {
+                                return "";
+                            }
+                            const plannedSlots = entry.planned_slots ?? 0;
+                            const loggedSlots = entry.logged_slots ?? 0;
+                            return [
+                                `Planned: ${ entry.planned_days } | Logged: ${ entry.logged_days }`,
+                                `Planned slots: ${ plannedSlots } | Logged slots: ${ loggedSlots }`,
+                            ];
+                        },
+                    },
+                },
+            },
+        },
+    });
+}

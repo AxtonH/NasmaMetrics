@@ -357,30 +357,8 @@
 
         </div>
 
-        <!-- Coverage & Activities -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-
-            <!-- Planned vs Logged Chart -->
-            <div id="card-planning-coverage" class="dashboard-card bg-white rounded-lg shadow-lg p-6">
-                <div class="flex flex-col gap-3 mb-4">
-                    <div class="flex items-center justify-between gap-2">
-                        <h2 class="text-xl font-semibold text-orange-600">Planned instances vs logged instances</h2>
-                        <span class="card-drag-handle card-meta cursor-move select-none">Drag</span>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-3">
-                        <label for="planningCoverageView" class="card-meta">View</label>
-                        <select id="planningCoverageView" class="filter-input min-w-[140px]">
-                            <option value="monthly">Monthly (last 6)</option>
-                            <option value="weekly">Weekly (last 6)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="chart-wrapper">
-                    <canvas id="planningCoverageChart"></canvas>
-                </div>
-
-            </div>
+        <!-- Nasma Activities -->
+        <div class="grid grid-cols-1 gap-6 mb-6">
 
             <!-- Nasma Activities Table -->
             <div id="card-activities-today" class="dashboard-card bg-white rounded-lg shadow-lg p-6 w-full">
@@ -489,6 +467,35 @@
 
             </div>
 
+        </div>
+
+        <!-- Full-Width Planning Coverage -->
+        <div class="mb-10">
+            <div id="card-planning-coverage" class="dashboard-card bg-white rounded-lg shadow-lg p-6 w-full">
+                <div class="flex flex-col gap-4 mb-6">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <h2 class="text-2xl font-semibold text-orange-600">Planned instances vs logged instances</h2>
+                        <a href="{{ url_for('planning_coverage_page') }}"
+                           class="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-purple-600 to-orange-500 text-white font-semibold shadow-lg hover:shadow-xl transition-shadow">
+                            Expand to full screen view →
+                        </a>
+                    </div>
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <p class="card-meta">Hover to see planned/logged days and slot counts.</p>
+                        <div class="flex items-center gap-3">
+                            <label for="planningCoverageView" class="card-meta">View</label>
+                            <select id="planningCoverageView" class="filter-input min-w-[160px]">
+                                <option value="monthly">Monthly (last 12)</option>
+                                <option value="weekly">Weekly (last 20)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="h-[520px]">
+                    <canvas id="planningCoverageChart" class="w-full h-full"></canvas>
+                </div>
+            </div>
         </div>
 
         <!-- Ease Editor Modal -->

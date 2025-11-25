@@ -243,6 +243,7 @@ def get_planning_coverage_by_month(
         ["x_studio_sub_task_1", "!=", False],
     ]
     planning_fields = [
+        "id",
         "start_datetime",
         "end_datetime",
         "employee_id",
@@ -256,29 +257,6 @@ def get_planning_coverage_by_month(
         kwargs={"limit": 0},
     ) or []
     print(f"[planning_coverage] Planning slots fetched: {len(planning_slots)}")
-
-    planned_keys = set()
-    for slot in planning_slots:
-        start_str = slot.get("start_datetime")
-        end_str = slot.get("end_datetime")
-        employee = slot.get("employee_id") or []
-        subtask = slot.get("x_studio_sub_task_1") or []
-
-        slot_start = _to_date(start_str)
-        slot_end = _to_date(end_str)
-        employee_id = employee[0] if isinstance(employee, list) and employee else None
-        subtask_id = subtask[0] if isinstance(subtask, list) and subtask else None
-
-        if not all([slot_start, slot_end, employee_id, subtask_id]):
-            continue
-
-        clamped_start = max(slot_start, global_start)
-        clamped_end = min(slot_end, global_end)
-        if clamped_end < clamped_start:
-            continue
-
-        for day in _daterange(clamped_start, clamped_end):
-            planned_keys.add((day, employee_id, subtask_id))
 
     # --- Timesheets ---
     ts_domain = [
@@ -317,6 +295,66 @@ def get_planning_coverage_by_month(
 
         logged_keys.add((day, employee_id, task_id))
 
+    planned_keys = set()
+    coverage_by_month: dict[str, dict] = {}
+    coverage_by_week: dict[str, dict] = {}
+
+    for slot in planning_slots:
+        slot_id = slot.get("id")
+        start_str = slot.get("start_datetime")
+        end_str = slot.get("end_datetime")
+        employee = slot.get("employee_id") or []
+        subtask = slot.get("x_studio_sub_task_1") or []
+
+        slot_start = _to_date(start_str)
+        slot_end = _to_date(end_str)
+        employee_id = employee[0] if isinstance(employee, list) and employee else None
+        subtask_id = subtask[0] if isinstance(subtask, list) and subtask else None
+
+        if not all([slot_id, slot_start, slot_end, employee_id, subtask_id]):
+            continue
+
+        clamped_start = max(slot_start, global_start)
+        clamped_end = min(slot_end, global_end)
+        if clamped_end < clamped_start:
+            continue
+
+        for day in _daterange(clamped_start, clamped_end):
+            key = (day, employee_id, subtask_id)
+            month_key = day.strftime("%Y-%m")
+            entry = coverage_by_month.setdefault(
+                month_key,
+                {
+                    "period": month_key,
+                    "planned_days": 0,
+                    "logged_days": 0,
+                    "planned_slot_ids": set(),
+                    "logged_slot_ids": set(),
+                },
+            )
+            entry["planned_slot_ids"].add(slot_id)
+            if key in logged_keys:
+                entry["logged_slot_ids"].add(slot_id)
+
+            iso_year, iso_week, _ = day.isocalendar()
+            week_key = f"{iso_year}-W{iso_week:02d}"
+            week_entry = coverage_by_week.setdefault(
+                week_key,
+                {"period": week_key, "planned_days": 0, "logged_days": 0},
+            )
+
+            if key in planned_keys:
+                continue
+
+            planned_keys.add(key)
+            entry["planned_days"] += 1
+            if key in logged_keys:
+                entry["logged_days"] += 1
+
+            week_entry["planned_days"] += 1
+            if key in logged_keys:
+                week_entry["logged_days"] += 1
+
     print(
         "[planning_coverage] Planned keys:",
         len(planned_keys),
@@ -324,40 +362,24 @@ def get_planning_coverage_by_month(
         len(logged_keys),
     )
 
-    coverage_by_month: dict[str, dict] = {}
-    coverage_by_week: dict[str, dict] = {}
-    for key in planned_keys:
-        day, emp_id, subtask_id = key
-        month_key = day.strftime("%Y-%m")
-        entry = coverage_by_month.setdefault(
-            month_key,
-            {"period": month_key, "planned_days": 0, "logged_days": 0},
-        )
-        entry["planned_days"] += 1
-        if key in logged_keys:
-            entry["logged_days"] += 1
-
-        iso_year, iso_week, _ = day.isocalendar()
-        week_key = f"{iso_year}-W{iso_week:02d}"
-        week_entry = coverage_by_week.setdefault(
-            week_key,
-            {"period": week_key, "planned_days": 0, "logged_days": 0},
-        )
-        week_entry["planned_days"] += 1
-        if key in logged_keys:
-            week_entry["logged_days"] += 1
-
-    def finalize(entries_map: dict[str, dict]) -> list[dict]:
+    def finalize(entries_map: dict[str, dict], include_slots: bool = False) -> list[dict]:
         results = []
         for entry in entries_map.values():
             planned = entry["planned_days"]
             logged = entry["logged_days"]
             entry["coverage_pct"] = (logged / planned * 100.0) if planned else 0.0
+            if include_slots:
+                planned_slots = len(entry.get("planned_slot_ids", set()))
+                logged_slots = len(entry.get("logged_slot_ids", set()))
+                entry["planned_slots"] = planned_slots
+                entry["logged_slots"] = logged_slots
+                entry.pop("planned_slot_ids", None)
+                entry.pop("logged_slot_ids", None)
             results.append(entry)
         results.sort(key=lambda item: item["period"])
         return results
 
-    monthly_results = finalize(coverage_by_month)
+    monthly_results = finalize(coverage_by_month, include_slots=True)
     weekly_results = finalize(coverage_by_week)
 
     print(

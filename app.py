@@ -169,6 +169,12 @@ def api_odoo_planning_coverage():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
+@app.route("/planning-coverage")
+def planning_coverage_page():
+    """Dedicated page for enlarged planning coverage chart."""
+    return render_template("planning.html")
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     debug_env = os.environ.get("FLASK_DEBUG", "True")
