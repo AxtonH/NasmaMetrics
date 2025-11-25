@@ -922,6 +922,8 @@ async function loadPlanningCoverage() {
         planningCoverageData = { monthly: [], weekly: [] };
         renderPlanningCoverageChart("monthly");
     }
+
+    setupPlanningFullscreenListener();
 }
 
 /**
@@ -1010,4 +1012,46 @@ function renderPlanningCoverageChart(view = "monthly") {
             },
         },
     });
+}
+
+/**
+ * Toggle full screen mode for planning coverage card
+ */
+function togglePlanningCoverageFullscreen() {
+    const card = document.getElementById("card-planning-coverage");
+    if (!card) {
+        return;
+    }
+
+    const isActive = document.fullscreenElement === card;
+    if (isActive) {
+        document.exitFullscreen?.();
+        return;
+    }
+
+    const request =
+        card.requestFullscreen ||
+        card.webkitRequestFullscreen ||
+        card.msRequestFullscreen ||
+        card.mozRequestFullScreen;
+    if (request) {
+        request.call(card);
+    }
+}
+
+function setupPlanningFullscreenListener() {
+    const handler = () => {
+        const button = document.getElementById("planningFullscreenBtn");
+        const card = document.getElementById("card-planning-coverage");
+        if (!button || !card) {
+            return;
+        }
+        const isActive = document.fullscreenElement === card;
+        button.textContent = isActive ? "Exit full screen view" : "Expand to full screen view";
+    };
+
+    document.addEventListener("fullscreenchange", handler);
+    document.addEventListener("webkitfullscreenchange", handler);
+    document.addEventListener("msfullscreenchange", handler);
+    handler();
 }
