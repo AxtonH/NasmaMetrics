@@ -1000,11 +1000,8 @@ function renderPlanningCoverageChart(view = "monthly") {
                             if (!entry) {
                                 return "";
                             }
-                            const plannedSlots = entry.planned_slots ?? 0;
-                            const loggedSlots = entry.logged_slots ?? 0;
                             return [
                                 `Planned: ${ entry.planned_days } | Logged: ${ entry.logged_days }`,
-                                `Planned slots: ${ plannedSlots } | Logged slots: ${ loggedSlots }`,
                             ];
                         },
                     },
