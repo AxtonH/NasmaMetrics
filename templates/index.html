@@ -355,37 +355,8 @@
 
             </div>
 
-            <!-- Odoo Monthly Hours Chart -->
-
-            <div id="card-odoo-hours" class="dashboard-card bg-white rounded-lg shadow-lg p-6">
-
-                <div class="flex items-center justify-between mb-4">
-
-                    <h2 class="text-xl font-semibold text-orange-600">Monthly Logged Hours</h2>
-
-                    <span class="card-drag-handle card-meta cursor-move select-none">Drag</span>
-
-                </div>
-
-                <div class="chart-wrapper">
-
-                    <canvas id="odooHoursChart"></canvas>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-
-        <!-- Comparative Insights -->
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-
             <!-- Planning Coverage Chart -->
             <div id="card-planning-coverage" class="dashboard-card bg-white rounded-lg shadow-lg p-6">
-
                 <div class="flex flex-col gap-3 mb-4">
                     <div class="flex items-center justify-between gap-2">
                         <h2 class="text-xl font-semibold text-orange-600">Planning Coverage</h2>
@@ -406,6 +377,13 @@
 
             </div>
 
+        </div>
+
+
+
+        <!-- Comparative Insights -->
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <!-- Ease Comparison Chart -->
 
             <div id="card-ease" class="dashboard-card bg-white rounded-lg shadow-lg p-6">
@@ -432,86 +410,86 @@
 
             </div>
 
+        </div>
+
         <!-- Nasma Tables -->
-        <div class="mb-6 overflow-x-auto">
-            <div class="flex gap-6 min-w-full">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 
-                <!-- Log Hours Table -->
-                <div id="card-log-hours" class="dashboard-card bg-white rounded-lg shadow-lg p-6 flex-shrink-0 w-full md:w-[520px] lg:w-[560px]">
+            <!-- Log Hours Table -->
+            <div id="card-log-hours" class="dashboard-card bg-white rounded-lg shadow-lg p-6 w-full">
 
-                    <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center justify-between mb-4">
 
-                        <h2 class="text-xl font-semibold text-orange-600">Nasma - for logging in hours</h2>
+                    <h2 class="text-xl font-semibold text-orange-600">Nasma - for logging in hours</h2>
 
-                        <span class="card-drag-handle card-meta cursor-move select-none">Drag</span>
-
-                    </div>
-
-                    <div class="border rounded-lg">
-
-                        <div class="max-h-64 overflow-y-auto">
-
-                            <table class="min-w-full text-left">
-
-                                <thead class="bg-gray-100 text-sm text-gray-700 sticky top-0">
-
-                                    <tr>
-
-                                        <th class="px-4 py-2 w-16">#</th>
-
-                                        <th class="px-4 py-2">User name</th>
-
-                                    </tr>
-
-                                </thead>
-
-                                <tbody id="logHoursTableBody" class="text-gray-800 text-sm">
-
-                                    <tr>
-
-                                        <td colspan="2" class="px-4 py-3 text-center card-meta">Loading...</td>
-
-                                    </tr>
-
-                                </tbody>
-
-                            </table>
-
-                        </div>
-
-                    </div>
+                    <span class="card-drag-handle card-meta cursor-move select-none">Drag</span>
 
                 </div>
 
-                <!-- Nasma Activities Table -->
-                <div id="card-activities-today" class="dashboard-card bg-white rounded-lg shadow-lg p-6 flex-shrink-0 w-full md:w-[520px] lg:w-[560px]">
-                    <div class="flex items-center justify-between mb-2">
-                        <h2 class="text-xl font-semibold text-orange-600">Nasma activities</h2>
-                        <span class="card-drag-handle card-meta cursor-move select-none">Drag</span>
+                <div class="border rounded-lg">
+
+                    <div class="max-h-64 overflow-y-auto">
+
+                        <table class="min-w-full text-left">
+
+                            <thead class="bg-gray-100 text-sm text-gray-700 sticky top-0">
+
+                                <tr>
+
+                                    <th class="px-4 py-2 w-16">#</th>
+
+                                    <th class="px-4 py-2">User name</th>
+
+                                </tr>
+
+                            </thead>
+
+                            <tbody id="logHoursTableBody" class="text-gray-800 text-sm">
+
+                                <tr>
+
+                                    <td colspan="2" class="px-4 py-3 text-center card-meta">Loading...</td>
+
+                                </tr>
+
+                            </tbody>
+
+                        </table>
+
                     </div>
-                    <p id="activitiesRangeLabel" class="card-meta mb-4">today</p>
-                    
-                    <div class="border rounded-lg">
-                        <div class="max-h-64 overflow-y-auto">
-                            <table class="min-w-full text-left">
-                                <thead class="bg-gray-100 text-sm text-gray-700 sticky top-0">
-                                    <tr>
-                                        <th class="px-4 py-2">User name</th>
-                                        <th class="px-4 py-2">Metric Type</th>
-                                        <th class="px-4 py-2 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="activitiesTableBody" class="text-gray-800 text-sm">
-                                    <tr>
-                                        <td colspan="3" class="px-4 py-3 text-center card-meta">Loading...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+
                 </div>
 
             </div>
+
+            <!-- Nasma Activities Table -->
+            <div id="card-activities-today" class="dashboard-card bg-white rounded-lg shadow-lg p-6 w-full">
+                <div class="flex items-center justify-between mb-2">
+                    <h2 class="text-xl font-semibold text-orange-600">Nasma activities</h2>
+                    <span class="card-drag-handle card-meta cursor-move select-none">Drag</span>
+                </div>
+                <p id="activitiesRangeLabel" class="card-meta mb-4">today</p>
+
+                <div class="border rounded-lg">
+                    <div class="max-h-64 overflow-y-auto">
+                        <table class="min-w-full text-left">
+                            <thead class="bg-gray-100 text-sm text-gray-700 sticky top-0">
+                                <tr>
+                                    <th class="px-4 py-2">User name</th>
+                                    <th class="px-4 py-2">Metric Type</th>
+                                    <th class="px-4 py-2 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activitiesTableBody" class="text-gray-800 text-sm">
+                                <tr>
+                                    <td colspan="3" class="px-4 py-3 text-center card-meta">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
         <!-- Ease Editor Modal -->

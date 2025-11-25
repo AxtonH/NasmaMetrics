@@ -7,7 +7,6 @@
 let activeUsersChart = null;
 let requestsChart = null;
 let easeComparisonChart = null;
-let odooHoursChart = null;
 let planningCoverageChart = null;
 
 const NASMA_COLORS = {
@@ -43,7 +42,6 @@ document.addEventListener("DOMContentLoaded", function () {
     initThemeToggle();
     initPlanningCoverageControls();
     loadDashboardData();
-    loadOdooMonthlyHours();
     loadPlanningCoverage();
 });
 
@@ -376,26 +374,6 @@ async function loadPlanningCoverage() {
 /**
  * Fetch and render Odoo monthly hours chart
  */
-async function loadOdooMonthlyHours() {
-    const canvas = document.getElementById("odooHoursChart");
-    if (!canvas) {
-        return;
-    }
-
-    try {
-        const response = await fetch("/api/odoo/monthly-hours");
-        const payload = await response.json();
-        if (payload && payload.ok && Array.isArray(payload.data)) {
-            renderOdooHoursChart(payload.data);
-        } else {
-            renderOdooHoursChart([]);
-        }
-    } catch (error) {
-        console.error("Error loading Odoo monthly hours:", error);
-        renderOdooHoursChart([]);
-    }
-}
-
 /**
  * Render Active Users Bar Chart
  */
@@ -499,66 +477,6 @@ function renderRequestsChart(data) {
                     title: {
                         display: true,
                         text: "Attribute",
-                    },
-                },
-            },
-            plugins: {
-                legend: {
-                    display: false,
-                },
-            },
-        },
-    });
-}
-
-/**
- * Render Odoo Monthly Hours Chart
- */
-function renderOdooHoursChart(data = []) {
-    const canvas = document.getElementById("odooHoursChart");
-    if (!canvas) {
-        return;
-    }
-
-    const ctx = canvas.getContext("2d");
-
-    if (odooHoursChart) {
-        odooHoursChart.destroy();
-    }
-
-    const lastSix = data.slice(-6);
-    const labels = lastSix.map((item) => formatMonthShort(item.month));
-    const values = lastSix.map((item) => item.total_hours || 0);
-
-    odooHoursChart = new Chart(ctx, {
-        type: "bar",
-        data: {
-            labels,
-            datasets: [
-                {
-                    label: "Logged Hours",
-                    data: values,
-                    backgroundColor: NASMA_COLORS.purpleSoft,
-                    borderColor: NASMA_COLORS.purpleBorder,
-                    borderWidth: 1,
-                },
-            ],
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: "Hours",
-                    },
-                },
-                x: {
-                    title: {
-                        display: true,
-                        text: "Month",
                     },
                 },
             },

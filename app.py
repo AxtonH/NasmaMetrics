@@ -8,10 +8,7 @@ from datetime import date, timedelta
 from flask import Flask, render_template, jsonify, request
 from flask_cors import CORS
 from database import Database
-from odoo_client import (
-    get_monthly_hours_from_september,
-    get_planning_coverage_by_month,
-)
+from odoo_client import get_planning_coverage_by_month
 
 import json
 ODOO_URL = os.getenv("ODOO_URL")
@@ -143,16 +140,6 @@ def get_activities_today():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
         
-@app.route("/api/odoo/monthly-hours")
-def api_odoo_monthly_hours():
-    try:
-        data = get_monthly_hours_from_september()
-        # data = [{'month': '2024-09', 'total_hours': 812.5}, ...]
-        return jsonify({"ok": True, "data": data})
-    except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 500
-
-
 @app.route("/api/odoo/planning-coverage")
 def api_odoo_planning_coverage():
     """
