@@ -355,6 +355,11 @@
 
             </div>
 
+        </div>
+
+        <!-- Coverage & Activities -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
             <!-- Planning Coverage Chart -->
             <div id="card-planning-coverage" class="dashboard-card bg-white rounded-lg shadow-lg p-6">
                 <div class="flex flex-col gap-3 mb-4">
@@ -377,8 +382,35 @@
 
             </div>
 
-        </div>
+            <!-- Nasma Activities Table -->
+            <div id="card-activities-today" class="dashboard-card bg-white rounded-lg shadow-lg p-6 w-full">
+                <div class="flex items-center justify-between mb-2">
+                    <h2 class="text-xl font-semibold text-orange-600">Nasma activities</h2>
+                    <span class="card-drag-handle card-meta cursor-move select-none">Drag</span>
+                </div>
+                <p id="activitiesRangeLabel" class="card-meta mb-4">today</p>
 
+                <div class="border rounded-lg">
+                    <div class="max-h-64 overflow-y-auto">
+                        <table class="min-w-full text-left">
+                            <thead class="bg-gray-100 text-sm text-gray-700 sticky top-0">
+                                <tr>
+                                    <th class="px-4 py-2">User name</th>
+                                    <th class="px-4 py-2">Metric Type</th>
+                                    <th class="px-4 py-2 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activitiesTableBody" class="text-gray-800 text-sm">
+                                <tr>
+                                    <td colspan="3" class="px-4 py-3 text-center card-meta">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
 
 
         <!-- Comparative Insights -->
@@ -409,11 +441,6 @@
                 </div>
 
             </div>
-
-        </div>
-
-        <!-- Nasma Tables -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 
             <!-- Log Hours Table -->
             <div id="card-log-hours" class="dashboard-card bg-white rounded-lg shadow-lg p-6 w-full">
@@ -460,34 +487,6 @@
 
                 </div>
 
-            </div>
-
-            <!-- Nasma Activities Table -->
-            <div id="card-activities-today" class="dashboard-card bg-white rounded-lg shadow-lg p-6 w-full">
-                <div class="flex items-center justify-between mb-2">
-                    <h2 class="text-xl font-semibold text-orange-600">Nasma activities</h2>
-                    <span class="card-drag-handle card-meta cursor-move select-none">Drag</span>
-                </div>
-                <p id="activitiesRangeLabel" class="card-meta mb-4">today</p>
-
-                <div class="border rounded-lg">
-                    <div class="max-h-64 overflow-y-auto">
-                        <table class="min-w-full text-left">
-                            <thead class="bg-gray-100 text-sm text-gray-700 sticky top-0">
-                                <tr>
-                                    <th class="px-4 py-2">User name</th>
-                                    <th class="px-4 py-2">Metric Type</th>
-                                    <th class="px-4 py-2 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="activitiesTableBody" class="text-gray-800 text-sm">
-                                <tr>
-                                    <td colspan="3" class="px-4 py-3 text-center card-meta">Loading...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
             </div>
 
         </div>
