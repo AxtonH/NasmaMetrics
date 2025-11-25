@@ -523,7 +523,7 @@ function renderPlanningCoverageChart(view = "monthly") {
             labels,
             datasets: [
                 {
-                    label: "Coverage %",
+                    label: "Planned vs Logged %",
                     data: values,
                     backgroundColor: NASMA_COLORS.orangeSoft,
                     borderColor: NASMA_COLORS.orangeSolid,
@@ -540,7 +540,7 @@ function renderPlanningCoverageChart(view = "monthly") {
                     suggestedMax: 100,
                     title: {
                         display: true,
-                        text: "Coverage %",
+                        text: "Planned vs Logged %",
                     },
                 },
                 x: {
