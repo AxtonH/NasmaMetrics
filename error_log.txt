@@ -1,0 +1,4 @@
+Testing get_nasma_activities_today()...
+Error fetching today's activities: {'code': 'PGRST202', 'details': 'Searched for the function public.get_daily_metrics without parameters or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.', 'hint': None, 'message': 'Could not find the function public.get_daily_metrics without parameters in the schema cache'}
+Results: []
+FAILURE: Returned empty list.

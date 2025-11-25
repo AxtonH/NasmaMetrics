@@ -1,0 +1,15 @@
+Current Server Time: 2025-11-20 09:43:09.880515
+Current UTC Time: 2025-11-20 06:43:09.881417
+
+Fetching last 10 metrics...
+Found 10 records.
+ID: 0b47e476-46a9-4ba1-82fe-f1175305ba58, Created At: 2025-11-19T10:58:03.38356+00:00, Type: log_hours
+ID: 0dd306fc-bf38-47f7-9f25-0fcbaa1792e2, Created At: 2025-11-19T10:57:15.240846+00:00, Type: log_hours
+ID: 36b81d50-7b0b-4cf3-83b8-a3303b6aa44d, Created At: 2025-11-19T10:56:30.343389+00:00, Type: log_hours
+ID: c7e46a10-1033-4d0b-9a03-62ab2838bb5d, Created At: 2025-11-19T10:41:53.783185+00:00, Type: timeoff_refusal
+ID: c40645d6-1008-4ef2-9705-7915d26b8999, Created At: 2025-11-19T10:33:40.18983+00:00, Type: log_hours
+ID: 931eaa8a-44b4-4db0-8c69-6c7d8bcc1950, Created At: 2025-11-18T08:25:27.199816+00:00, Type: overtime_approval
+ID: 8655cf50-eba0-4759-9ea7-fef80c7883e8, Created At: 2025-11-18T08:25:21.189871+00:00, Type: overtime_approval
+ID: 7813d492-3452-4d3f-abb7-226955e55f88, Created At: 2025-11-18T08:25:05.663465+00:00, Type: overtime_approval
+ID: c040c969-9738-4cfc-9521-2d8115719de4, Created At: 2025-11-18T08:24:44.586146+00:00, Type: overtime_approval
+ID: 379fedd3-9bdf-488a-b958-d7d9e5536546, Created At: 2025-11-18T07:40:49.640591+00:00, Type: timeoff

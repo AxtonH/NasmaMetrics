@@ -1,0 +1,16 @@
+Testing Global Time Frame Filters...
+Date Range: 2025-11-13 to 2025-11-20
+
+1. Testing Active Users...
+Error fetching http://127.0.0.1:5000/api/active-users: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>
+Error fetching http://127.0.0.1:5000/api/active-users?start_date=2025-11-13&end_date=2025-11-20: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>
+FAIL: Could not fetch data
+
+2. Testing Requests...
+Error fetching http://127.0.0.1:5000/api/requests: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>
+Error fetching http://127.0.0.1:5000/api/requests?start_date=2025-11-13&end_date=2025-11-20: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>
+FAIL: Could not fetch data
+
+3. Testing Activities Summary...
+Error fetching http://127.0.0.1:5000/api/activities-today?start_date=2025-11-13&end_date=2025-11-20: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>
+FAIL: Could not fetch activities

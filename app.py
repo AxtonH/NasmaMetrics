@@ -1,12 +1,24 @@
-"""
-Flask application for Nasma Dashboard
-Provides API endpoints for dashboard data
-"""
+from dotenv import load_dotenv
+load_dotenv()
+
 import os
+
+import os
+from datetime import date, timedelta
 from flask import Flask, render_template, jsonify, request
 from flask_cors import CORS
 from database import Database
+from odoo_client import (
+    get_monthly_hours_from_september,
+    get_planning_coverage_by_month,
+)
+
 import json
+ODOO_URL = os.getenv("ODOO_URL")
+ODOO_DB = os.getenv("ODOO_DB")
+ODOO_USERNAME = os.getenv("ODOO_USERNAME")
+ODOO_PASSWORD = os.getenv("ODOO_PASSWORD")
+
 
 app = Flask(__name__)
 CORS(app)
@@ -130,6 +142,44 @@ def get_activities_today():
         return jsonify({"success": True, "data": data})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+        
+@app.route("/api/odoo/monthly-hours")
+def api_odoo_monthly_hours():
+    try:
+        data = get_monthly_hours_from_september()
+        # data = [{'month': '2024-09', 'total_hours': 812.5}, ...]
+        return jsonify({"ok": True, "data": data})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/odoo/planning-coverage")
+def api_odoo_planning_coverage():
+    """
+    Return planning coverage (monthly + weekly) for roughly the last 12 months.
+    """
+    try:
+        today = date.today()
+        first_of_current = today.replace(day=1)
+
+        months_back = 11
+        year = first_of_current.year
+        month = first_of_current.month - months_back
+        while month <= 0:
+            month += 12
+            year -= 1
+        start_date_dt = date(year, month, 1)
+
+        next_month = (first_of_current.replace(day=28) + timedelta(days=4)).replace(day=1)
+        end_date_dt = next_month - timedelta(days=1)
+
+        start_date_str = start_date_dt.strftime("%Y-%m-%d")
+        end_date_str = end_date_dt.strftime("%Y-%m-%d")
+
+        data = get_planning_coverage_by_month(start_date_str, end_date_str)
+        return jsonify({"ok": True, "data": data})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 
 if __name__ == "__main__":

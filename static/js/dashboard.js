@@ -7,6 +7,8 @@
 let activeUsersChart = null;
 let requestsChart = null;
 let easeComparisonChart = null;
+let odooHoursChart = null;
+let planningCoverageChart = null;
 
 const NASMA_COLORS = {
     purpleSolid: "rgba(124, 58, 237, 1)",
@@ -29,6 +31,8 @@ const dashboardFilters = {
     end: null,
 };
 
+let planningCoverageData = { monthly: [], weekly: [] };
+
 /**
  * Initialize dashboard on page load
  */
@@ -37,7 +41,10 @@ document.addEventListener("DOMContentLoaded", function () {
     initFilterControls();
     updateFilterLabel();
     initThemeToggle();
+    initPlanningCoverageControls();
     loadDashboardData();
+    loadOdooMonthlyHours();
+    loadPlanningCoverage();
 });
 
 function initFilterControls() {
@@ -112,6 +119,56 @@ function formatDateLabel(value) {
         return value;
     }
     return date.toLocaleDateString();
+}
+
+function formatMonthShort(value) {
+    if (!value) {
+        return "";
+    }
+    const date = new Date(`${ value }-01T00:00:00`);
+    if (Number.isNaN(date.getTime())) {
+        return value;
+    }
+    return date.toLocaleDateString(undefined, {
+        month: "short",
+        year: "2-digit",
+    });
+}
+
+function formatWeekLabel(period) {
+    if (!period || typeof period !== "string") {
+        return "";
+    }
+    const match = period.match(/^(\d{4})-W(\d{2})$/);
+    if (!match) {
+        return period;
+    }
+    const year = Number(match[1]);
+    const week = Number(match[2]);
+    const startDate = getIsoWeekStartDate(year, week);
+    if (!startDate) {
+        return period;
+    }
+    const formatted = startDate.toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+    });
+    return `Week of ${ formatted }`;
+}
+
+function getIsoWeekStartDate(year, week) {
+    if (!Number.isFinite(year) || !Number.isFinite(week)) {
+        return null;
+    }
+    const simple = new Date(Date.UTC(year, 0, 4));
+    const dayOfWeek = simple.getUTCDay() || 7;
+    const isoWeekStart = new Date(simple);
+    isoWeekStart.setUTCDate(simple.getUTCDate() - dayOfWeek + 1 + (week - 1) * 7);
+    return new Date(
+        isoWeekStart.getUTCFullYear(),
+        isoWeekStart.getUTCMonth(),
+        isoWeekStart.getUTCDate(),
+    );
 }
 
 function getFilterDescriptions() {
@@ -274,6 +331,71 @@ async function loadDashboardData() {
     }
 }
 
+function initPlanningCoverageControls() {
+    const select = document.getElementById("planningCoverageView");
+    if (!select) {
+        return;
+    }
+    select.addEventListener("change", () => {
+        renderPlanningCoverageChart(select.value);
+    });
+}
+
+/**
+ * Load planning coverage data
+ */
+async function loadPlanningCoverage() {
+    const canvas = document.getElementById("planningCoverageChart");
+    if (!canvas) {
+        return;
+    }
+
+    try {
+        const response = await fetch("/api/odoo/planning-coverage");
+        const payload = await response.json();
+        if (payload && payload.ok) {
+            const data = payload.data || {};
+            planningCoverageData = {
+                monthly: Array.isArray(data.monthly) ? data.monthly : [],
+                weekly: Array.isArray(data.weekly) ? data.weekly : [],
+            };
+            const viewSelect = document.getElementById("planningCoverageView");
+            const selectedView = viewSelect ? viewSelect.value : "monthly";
+            renderPlanningCoverageChart(selectedView);
+        } else {
+            planningCoverageData = { monthly: [], weekly: [] };
+            renderPlanningCoverageChart("monthly");
+        }
+    } catch (error) {
+        console.error("Error loading planning coverage:", error);
+        planningCoverageData = { monthly: [], weekly: [] };
+        renderPlanningCoverageChart("monthly");
+    }
+}
+
+/**
+ * Fetch and render Odoo monthly hours chart
+ */
+async function loadOdooMonthlyHours() {
+    const canvas = document.getElementById("odooHoursChart");
+    if (!canvas) {
+        return;
+    }
+
+    try {
+        const response = await fetch("/api/odoo/monthly-hours");
+        const payload = await response.json();
+        if (payload && payload.ok && Array.isArray(payload.data)) {
+            renderOdooHoursChart(payload.data);
+        } else {
+            renderOdooHoursChart([]);
+        }
+    } catch (error) {
+        console.error("Error loading Odoo monthly hours:", error);
+        renderOdooHoursChart([]);
+    }
+}
+
 /**
  * Render Active Users Bar Chart
  */
@@ -383,6 +505,148 @@ function renderRequestsChart(data) {
             plugins: {
                 legend: {
                     display: false,
+                },
+            },
+        },
+    });
+}
+
+/**
+ * Render Odoo Monthly Hours Chart
+ */
+function renderOdooHoursChart(data = []) {
+    const canvas = document.getElementById("odooHoursChart");
+    if (!canvas) {
+        return;
+    }
+
+    const ctx = canvas.getContext("2d");
+
+    if (odooHoursChart) {
+        odooHoursChart.destroy();
+    }
+
+    const lastSix = data.slice(-6);
+    const labels = lastSix.map((item) => formatMonthShort(item.month));
+    const values = lastSix.map((item) => item.total_hours || 0);
+
+    odooHoursChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: "Logged Hours",
+                    data: values,
+                    backgroundColor: NASMA_COLORS.purpleSoft,
+                    borderColor: NASMA_COLORS.purpleBorder,
+                    borderWidth: 1,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: "Hours",
+                    },
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: "Month",
+                    },
+                },
+            },
+            plugins: {
+                legend: {
+                    display: false,
+                },
+            },
+        },
+    });
+}
+
+/**
+ * Render planning coverage chart for selected view
+ */
+function renderPlanningCoverageChart(view = "monthly") {
+    const canvas = document.getElementById("planningCoverageChart");
+    if (!canvas) {
+        return;
+    }
+
+    const ctx = canvas.getContext("2d");
+    const dataset = planningCoverageData[view] || [];
+    const trimmed = dataset.slice(-6);
+
+    if (planningCoverageChart) {
+        planningCoverageChart.destroy();
+    }
+
+    if (!trimmed.length) {
+        return;
+    }
+
+    const labels = trimmed.map((entry) =>
+        view === "monthly" ? formatMonthShort(entry.period) : formatWeekLabel(entry.period),
+    );
+    const values = trimmed.map((entry) =>
+        typeof entry.coverage_pct === "number" ? Number(entry.coverage_pct.toFixed(2)) : 0,
+    );
+
+    planningCoverageChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: "Coverage %",
+                    data: values,
+                    backgroundColor: NASMA_COLORS.orangeSoft,
+                    borderColor: NASMA_COLORS.orangeSolid,
+                    borderWidth: 1,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    suggestedMax: 100,
+                    title: {
+                        display: true,
+                        text: "Coverage %",
+                    },
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: view === "monthly" ? "Month" : "Week",
+                    },
+                },
+            },
+            plugins: {
+                legend: {
+                    display: false,
+                },
+                tooltip: {
+                    callbacks: {
+                        afterBody(context) {
+                            const index = context[0].dataIndex;
+                            const entry = trimmed[index];
+                            if (!entry) {
+                                return "";
+                            }
+                            return `Planned: ${ entry.planned_days } | Logged: ${ entry.logged_days }`;
+                        },
+                    },
                 },
             },
         },
