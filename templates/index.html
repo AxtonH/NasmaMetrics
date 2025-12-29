@@ -67,6 +67,33 @@
             margin: 0;
         }
 
+        #card-request-durations.summary-card {
+            justify-content: flex-start;
+            gap: 1rem;
+        }
+
+        #card-request-durations h2 {
+            margin-bottom: 0.25rem;
+        }
+
+        #card-request-durations .duration-grid {
+            width: 100%;
+            display: flex;
+            gap: 1rem;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        #card-request-durations .duration-item {
+            flex: 1;
+            text-align: center;
+        }
+
+        #card-request-durations .duration-value {
+            font-size: clamp(2rem, 3vw, 2.6rem);
+            line-height: 1;
+        }
+
         .filter-panel {
             border-radius: 18px;
             background: rgba(255, 255, 255, 0.75);
@@ -241,7 +268,7 @@
         
         <!-- Summary Cards -->
 
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-6 mb-6">
 
             <!-- Nasma Adoption Card -->
 
@@ -265,15 +292,24 @@
                 <p class="card-meta">Fewer errors since Nasma launch</p>
             </div>
 
-            <!-- Messages Sent Card -->
+            <!-- Request Duration Card -->
 
-            <div id="card-messages" class="dashboard-card summary-card p-6">
+            <div id="card-request-durations" class="dashboard-card summary-card p-6 duration-card">
 
-                <h2 class="text-xl font-semibold text-orange-600">Messages sent to Nasma</h2>
+                <h2 class="text-xl font-semibold text-orange-600">Avg Request Duration</h2>
 
-                <div class="text-5xl font-black highlight-value" id="messagesCount">-</div>
+                <div class="duration-grid">
 
-                <p class="card-meta">Qualifying user messages</p>
+                    <div class="duration-item flex flex-col items-center gap-1">
+                        <p class="text-xs uppercase tracking-widest text-gray-600 font-semibold">Time off</p>
+                        <div class="duration-value font-black highlight-value" id="durationTimeoffValue">-</div>
+                    </div>
+
+                    <div class="duration-item flex flex-col items-center gap-1">
+                        <p class="text-xs uppercase tracking-widest text-gray-600 font-semibold">Overtime</p>
+                        <div class="duration-value font-black highlight-value" id="durationOvertimeValue">-</div>
+                    </div>
+                </div>
 
             </div>
 
@@ -301,6 +337,35 @@
 
             </div>
 
+        </div>
+
+        <div class="grid grid-cols-1 gap-6 mb-6">
+            <div id="card-adoption-by-department" class="dashboard-card bg-white rounded-lg shadow-lg p-6 w-full">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-orange-600">Adoption by department (all time)</h2>
+                    <span class="card-drag-handle card-meta cursor-move select-none">Drag</span>
+                </div>
+
+                <div class="border rounded-lg">
+                    <div class="max-h-64 overflow-y-auto">
+                        <table class="min-w-full text-left">
+                            <thead class="bg-gray-100 text-sm text-gray-700 sticky top-0">
+                                <tr>
+                                    <th class="px-4 py-2">Department</th>
+                                    <th class="px-4 py-2 text-right">Active users</th>
+                                    <th class="px-4 py-2 text-right">Total employees</th>
+                                    <th class="px-4 py-2 text-right">Adoption %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adoptionDepartmentTableBody" class="text-gray-800 text-sm">
+                                <tr>
+                                    <td colspan="4" class="px-4 py-3 text-center card-meta">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
 
 
@@ -465,6 +530,59 @@
 
                 </div>
 
+            </div>
+
+            <!-- Request Success Rates Table -->
+            <div id="card-request-success" class="dashboard-card bg-white rounded-lg shadow-lg p-6 w-full">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-orange-600">Request success rate</h2>
+                    <span class="card-drag-handle card-meta cursor-move select-none">Drag</span>
+                </div>
+
+                <div class="border rounded-lg">
+                    <div class="max-h-64 overflow-y-auto">
+                        <table class="min-w-full text-left">
+                            <thead class="bg-gray-100 text-sm text-gray-700 sticky top-0">
+                                <tr>
+                                    <th class="px-4 py-2">Request type</th>
+                                    <th class="px-4 py-2">Success rate</th>
+                                    <th class="px-4 py-2 text-right">Successes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="requestSuccessTableBody" class="text-gray-800 text-sm">
+                                <tr>
+                                    <td colspan="3" class="px-4 py-3 text-center card-meta">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Employees Without Chats -->
+            <div id="card-inactive-employees" class="dashboard-card bg-white rounded-lg shadow-lg p-6 w-full">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-orange-600">Team that has not used Nasma</h2>
+                    <span class="card-drag-handle card-meta cursor-move select-none">Drag</span>
+                </div>
+
+                <div class="border rounded-lg">
+                    <div class="max-h-64 overflow-y-auto">
+                        <table class="min-w-full text-left">
+                            <thead class="bg-gray-100 text-sm text-gray-700 sticky top-0">
+                                <tr>
+                                    <th class="px-4 py-2">Department</th>
+                                    <th class="px-4 py-2">Employee</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inactiveEmployeesTableBody" class="text-gray-800 text-sm">
+                                <tr>
+                                    <td colspan="2" class="px-4 py-3 text-center card-meta">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
         </div>
