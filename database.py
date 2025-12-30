@@ -188,25 +188,42 @@ class Database:
             }
 
             employees_response = (
-                self.client.table(SUPABASE_EMPLOYEES_TABLE)
-                .select("full_name, department")
-                .execute()
+                self.client.table(SUPABASE_EMPLOYEES_TABLE).select("*").execute()
             )
 
-            employees_by_name: Dict[str, str] = {}
+            alias_to_primary: Dict[str, str] = {}
+            primary_department: Dict[str, str] = {}
             department_members: Dict[str, set] = {}
 
             for row in employees_response.data or []:
-                full_name = row.get("full_name")
-                department = row.get("department") or "Unknown"
+                department = (
+                    row.get("department") or row.get("Department") or "Unknown"
+                )
+                possible_names = [
+                    row.get("Employee Name"),
+                    row.get("full_name"),
+                    row.get("user_name"),
+                    row.get("username"),
+                ]
 
-                if not full_name or full_name in excluded_names:
+                primary_name = None
+                for candidate in possible_names:
+                    if candidate and candidate not in excluded_names:
+                        primary_name = candidate
+                        break
+
+                if not primary_name:
                     continue
 
-                employees_by_name[full_name] = department
                 if department not in department_members:
                     department_members[department] = set()
-                department_members[department].add(full_name)
+                department_members[department].add(primary_name)
+                primary_department[primary_name] = department
+
+                for alias in possible_names:
+                    if not alias or alias in excluded_names:
+                        continue
+                    alias_to_primary[alias] = primary_name
 
             page_size = 1000
             start = 0
@@ -243,13 +260,17 @@ class Database:
                     if not user_name:
                         continue
 
-                    department = employees_by_name.get(user_name)
+                    primary_name = alias_to_primary.get(user_name)
+                    if not primary_name:
+                        continue
+
+                    department = primary_department.get(primary_name)
                     if not department:
                         continue
 
                     if department not in department_active:
                         department_active[department] = set()
-                    department_active[department].add(user_name)
+                    department_active[department].add(primary_name)
 
                 if len(batch) < page_size:
                     break
@@ -437,18 +458,19 @@ class Database:
 
     def get_inactive_employees(self) -> List[Dict[str, Any]]:
         """
-        Return employees from employees_reference who never sent a chat message (role='user').
-        Mirrors provided SQL logic by comparing employee list against chat metadata user_name.
+        Return employees who never messaged (role='user'), excluding specified names.
+        Mirrors provided SQL logic with NOT ILIKE filters and NOT EXISTS check.
         """
         try:
-            # Load all employees in batches
-            employees = []
+            excluded_terms = ("omar", "saba", "sanad")
             page_size = 1000
+
+            employees: List[Dict[str, Any]] = []
             start = 0
             while True:
                 response = (
                     self.client.table(SUPABASE_EMPLOYEES_TABLE)
-                    .select("user_name, department")
+                    .select("*")
                     .range(start, start + page_size - 1)
                     .execute()
                 )
@@ -456,10 +478,11 @@ class Database:
                 if not batch:
                     break
                 employees.extend(batch)
+                if len(batch) < page_size:
+                    break
                 start += page_size
 
-            # Collect distinct user_name values from chat messages (role='user')
-            message_users = set()
+            message_users: set = set()
             start = 0
             while True:
                 response = (
@@ -472,7 +495,6 @@ class Database:
                 batch = response.data or []
                 if not batch:
                     break
-
                 for message in batch:
                     metadata = message.get("metadata") or {}
                     if isinstance(metadata, str):
@@ -483,22 +505,35 @@ class Database:
                     username = metadata.get("user_name") or metadata.get("username")
                     if username:
                         message_users.add(username)
-
+                if len(batch) < page_size:
+                    break
                 start += page_size
 
             inactive = []
             for employee in employees:
-                username = employee.get("user_name") or employee.get("username")
-                department = employee.get("department") or "Unknown"
-                if not username:
-                    continue
-                if username in message_users:
-                    continue
-                inactive.append(
-                    {"user_name": username, "department": department}
+                possible_names = [
+                    employee.get("Employee Name"),
+                    employee.get("full_name"),
+                    employee.get("user_name"),
+                    employee.get("username"),
+                ]
+                name = next((n for n in possible_names if n), None)
+                department = (
+                    employee.get("department") or employee.get("Department") or "Unknown"
                 )
+                if not name:
+                    continue
 
-            inactive.sort(key=lambda entry: (entry["department"], entry["user_name"]))
+                lower_name = name.lower()
+                if any(term in lower_name for term in excluded_terms):
+                    continue
+
+                if any(alias and alias in message_users for alias in possible_names):
+                    continue
+
+                inactive.append({"employee_name": name, "department": department})
+
+            inactive.sort(key=lambda entry: (entry["department"], entry["employee_name"]))
             return inactive
         except Exception as e:
             print(f"Error fetching inactive employees: {e}")

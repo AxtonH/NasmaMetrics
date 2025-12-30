@@ -663,14 +663,15 @@ function renderInactiveEmployeesTable(entries) {
     }
 
     tableBody.innerHTML = entries
-        .map(
-            (entry) => `
+        .map((entry) => {
+            const name = entry.employee_name || entry.user_name || "-";
+            return `
                 <tr class="border-t border-gray-100">
                     <td class="px-4 py-3 font-medium text-gray-800">${entry.department || "Unknown"}</td>
-                    <td class="px-4 py-3">${entry.user_name || "-"}</td>
+                    <td class="px-4 py-3">${name}</td>
                 </tr>
-            `,
-        )
+            `;
+        })
         .join("");
 }
 
