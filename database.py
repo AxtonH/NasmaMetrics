@@ -10,10 +10,16 @@ from config import (
     SUPABASE_MESSAGE_TABLE,
     SUPABASE_REFRESH_TOKEN_TABLE,
     SUPABASE_EMPLOYEES_TABLE,
+    SUPABASE_POSTGRES_URL,
 )
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import json
+
+try:
+    import psycopg
+except ImportError:  # pragma: no cover - optional dependency
+    psycopg = None
 
 
 class Database:
@@ -22,7 +28,25 @@ class Database:
     def __init__(self):
         """Initialize Supabase client"""
         self.client: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE)
+        self._sql_conn_str: Optional[str] = SUPABASE_POSTGRES_URL if psycopg else None
 
+    def _run_sql(self, query: str) -> Optional[List[Dict[str, Any]]]:
+        """
+        Execute raw SQL against Supabase Postgres when a connection string is configured.
+        """
+        if not self._sql_conn_str:
+            return None
+        try:
+            with psycopg.connect(self._sql_conn_str) as conn:
+                with conn.cursor() as cur:
+                    cur.execute(query)
+                    columns = [desc[0] for desc in cur.description or []]
+                    rows = cur.fetchall()
+            result = [dict(zip(columns, row)) for row in rows]
+            return result
+        except Exception as exc:
+            print(f"Error executing SQL query: {exc}")
+            return None
     def get_active_users_by_month(
         self, start_date: str = None, end_date: str = None
     ) -> List[Dict[str, Any]]:
@@ -177,64 +201,116 @@ class Database:
         self, start_date: str = None, end_date: str = None
     ) -> List[Dict[str, Any]]:
         """
-        Calculate adoption per department following the provided SQL logic.
-        Returns list of departments with counts and adoption rate.
+        Calculate adoption per department using Employee Name + Department columns,
+        mirroring the provided SQL with case-insensitive joins and distinct counts.
         """
-        try:
-            excluded_names = {
-                "Omar Basem Elhasan",
-                "Saba S. F. Abuhouran Dababneh",
-                "Sanad Feras Khaleel Zaqtan",
-            }
+        def normalize_name(value: Any) -> str:
+            """Lower-case and collapse whitespace to match SQL normalization."""
+            if not value:
+                return ""
+            if not isinstance(value, str):
+                value = str(value)
+            return " ".join(value.split()).lower()
 
-            employees_response = (
-                self.client.table(SUPABASE_EMPLOYEES_TABLE).select("*").execute()
+        sql_override = self._run_sql(
+            """
+            WITH employee_base AS (
+              SELECT
+                er."Employee Name" AS employee_name,
+                er."Department"    AS department
+              FROM employees_reference er
+              WHERE er."Employee Name" NOT ILIKE '%omar%'
+                AND er."Employee Name" NOT ILIKE '%saba%'
+                AND er."Employee Name" NOT ILIKE '%sanad%'
+            ),
+            active_users AS (
+              SELECT DISTINCT
+                LOWER(sm.user_name) AS employee_name_lc
+              FROM session_metrics sm
+              WHERE sm.user_name IS NOT NULL
+            ),
+            adoption AS (
+              SELECT
+                eb.department,
+                COUNT(DISTINCT eb.employee_name) AS total_employees,
+                COUNT(
+                  DISTINCT CASE
+                    WHEN au.employee_name_lc = LOWER(eb.employee_name) THEN eb.employee_name
+                  END
+                ) AS active_users
+              FROM employee_base eb
+              LEFT JOIN active_users au
+                ON au.employee_name_lc = LOWER(eb.employee_name)
+              GROUP BY eb.department
             )
+            SELECT
+              department AS "Department",
+              active_users AS "Active users",
+              total_employees AS "Total employees",
+              ROUND((active_users::numeric / NULLIF(total_employees, 0)) * 100, 1) AS "Adoption %"
+            FROM adoption
+            ORDER BY "Adoption %" DESC, "Active users" DESC;
+            """
+        )
+        if sql_override is not None:
+            return [
+                {
+                    "department": row.get("Department"),
+                    "active_users": row.get("Active users", 0),
+                    "total_employees": row.get("Total employees", 0),
+                    "adoption_rate_percent": float(row.get("Adoption %", 0))
+                    if row.get("Adoption %") is not None
+                    else 0,
+                }
+                for row in sql_override
+            ]
 
-            alias_to_primary: Dict[str, str] = {}
-            primary_department: Dict[str, str] = {}
-            department_members: Dict[str, set] = {}
+        try:
+            excluded_terms = ("omar", "saba", "sanad")
+            dept_members: Dict[str, set] = {}
 
-            for row in employees_response.data or []:
-                department = (
-                    row.get("department") or row.get("Department") or "Unknown"
-                )
-                possible_names = [
-                    row.get("Employee Name"),
-                    row.get("full_name"),
-                    row.get("user_name"),
-                    row.get("username"),
-                ]
-
-                primary_name = None
-                for candidate in possible_names:
-                    if candidate and candidate not in excluded_names:
-                        primary_name = candidate
-                        break
-
-                if not primary_name:
-                    continue
-
-                if department not in department_members:
-                    department_members[department] = set()
-                department_members[department].add(primary_name)
-                primary_department[primary_name] = department
-
-                for alias in possible_names:
-                    if not alias or alias in excluded_names:
-                        continue
-                    alias_to_primary[alias] = primary_name
-
-            page_size = 1000
             start = 0
-            department_active: Dict[str, set] = {}
-
+            page_size = 1000
             while True:
-                query = (
-                    self.client.table(SUPABASE_MESSAGE_TABLE)
-                    .select("metadata, created_at, role")
-                    .eq("role", "user")
+                response = (
+                    self.client.table(SUPABASE_EMPLOYEES_TABLE)
+                    .select('"Employee Name","Department"')
+                    .range(start, start + page_size - 1)
+                    .execute()
                 )
+                batch = response.data or []
+                if not batch:
+                    break
+
+                for row in batch:
+                    raw_name = row.get("Employee Name")
+                    name = raw_name.strip() if isinstance(raw_name, str) else raw_name
+                    raw_department = row.get("Department") or "Unknown"
+                    department = (
+                        raw_department.strip()
+                        if isinstance(raw_department, str)
+                        else raw_department
+                    ) or "Unknown"
+                    if not name:
+                        continue
+
+                    normalized_name = normalize_name(name)
+                    if not normalized_name:
+                        continue
+                    if any(term in normalized_name for term in excluded_terms):
+                        continue
+
+                    dept_members.setdefault(department, set()).add(name)
+
+                if len(batch) < page_size:
+                    break
+                start += page_size
+
+            # Collect active user keys from session_metrics
+            active_name_keys: set = set()
+            start = 0
+            while True:
+                query = self.client.table(SUPABASE_METRIC_TABLE).select("user_name")
                 if start_date:
                     query = query.gte("created_at", start_date)
                 if end_date:
@@ -248,39 +324,24 @@ class Database:
                 if not batch:
                     break
 
-                for message in batch:
-                    metadata = message.get("metadata") or {}
-                    if isinstance(metadata, str):
-                        try:
-                            metadata = json.loads(metadata)
-                        except json.JSONDecodeError:
-                            metadata = {}
-
-                    user_name = metadata.get("user_name") or metadata.get("username")
-                    if not user_name:
-                        continue
-
-                    primary_name = alias_to_primary.get(user_name)
-                    if not primary_name:
-                        continue
-
-                    department = primary_department.get(primary_name)
-                    if not department:
-                        continue
-
-                    if department not in department_active:
-                        department_active[department] = set()
-                    department_active[department].add(primary_name)
+                for row in batch:
+                    user_name = row.get("user_name")
+                    normalized = normalize_name(user_name)
+                    if normalized:
+                        active_name_keys.add(normalized)
 
                 if len(batch) < page_size:
                     break
-
                 start += page_size
 
             results: List[Dict[str, Any]] = []
-            for department, members in department_members.items():
+            for department, members in dept_members.items():
                 total = len(members)
-                active = len(department_active.get(department, set()))
+                active = 0
+                for name in members:
+                    normalized = normalize_name(name)
+                    if normalized and normalized in active_name_keys:
+                        active += 1
                 adoption_rate = round((active / total) * 100, 1) if total else 0
                 results.append(
                     {
@@ -292,7 +353,7 @@ class Database:
                 )
 
             results.sort(
-                key=lambda item: (-item["adoption_rate_percent"], item["department"])
+                key=lambda item: (-item["adoption_rate_percent"], -item["active_users"])
             )
             return results
         except Exception as e:
@@ -455,219 +516,6 @@ class Database:
         except Exception as e:
             print(f"Error fetching log hours users: {e}")
             return []
-
-    def get_inactive_employees(self) -> List[Dict[str, Any]]:
-        """
-        Return employees who never messaged (role='user'), excluding specified names.
-        Mirrors provided SQL logic with NOT ILIKE filters and NOT EXISTS check.
-        """
-        try:
-            excluded_terms = ("omar", "saba", "sanad")
-            page_size = 1000
-
-            employees: List[Dict[str, Any]] = []
-            start = 0
-            while True:
-                response = (
-                    self.client.table(SUPABASE_EMPLOYEES_TABLE)
-                    .select("*")
-                    .range(start, start + page_size - 1)
-                    .execute()
-                )
-                batch = response.data or []
-                if not batch:
-                    break
-                employees.extend(batch)
-                if len(batch) < page_size:
-                    break
-                start += page_size
-
-            message_users: set = set()
-            start = 0
-            while True:
-                response = (
-                    self.client.table(SUPABASE_MESSAGE_TABLE)
-                    .select("metadata, role")
-                    .eq("role", "user")
-                    .range(start, start + page_size - 1)
-                    .execute()
-                )
-                batch = response.data or []
-                if not batch:
-                    break
-                for message in batch:
-                    metadata = message.get("metadata") or {}
-                    if isinstance(metadata, str):
-                        try:
-                            metadata = json.loads(metadata)
-                        except json.JSONDecodeError:
-                            metadata = {}
-                    username = metadata.get("user_name") or metadata.get("username")
-                    if username:
-                        message_users.add(username)
-                if len(batch) < page_size:
-                    break
-                start += page_size
-
-            inactive = []
-            for employee in employees:
-                possible_names = [
-                    employee.get("Employee Name"),
-                    employee.get("full_name"),
-                    employee.get("user_name"),
-                    employee.get("username"),
-                ]
-                name = next((n for n in possible_names if n), None)
-                department = (
-                    employee.get("department") or employee.get("Department") or "Unknown"
-                )
-                if not name:
-                    continue
-
-                lower_name = name.lower()
-                if any(term in lower_name for term in excluded_terms):
-                    continue
-
-                if any(alias and alias in message_users for alias in possible_names):
-                    continue
-
-                inactive.append({"employee_name": name, "department": department})
-
-            inactive.sort(key=lambda entry: (entry["department"], entry["employee_name"]))
-            return inactive
-        except Exception as e:
-            print(f"Error fetching inactive employees: {e}")
-            return []
-
-    def get_average_request_durations(
-        self, start_date: str = None, end_date: str = None
-    ) -> List[Dict[str, Any]]:
-        """
-        Calculate average duration per request type (log_hours, timeoff, overtime).
-        Duration equals the span between the first and last session_metric entry in a thread.
-        Results exclude requests initiated by specific internal users.
-        """
-        target_metrics = ["log_hours", "timeoff", "overtime"]
-        excluded_users = {
-            "Omar Basem Elhasan",
-            "Saba S. F. Abuhouran Dababneh",
-            "Sanad Feras Khaleel Zaqtan",
-        }
-
-        try:
-            page_size = 1000
-            start = 0
-            metrics: List[Dict[str, Any]] = []
-
-            while True:
-                query = (
-                    self.client.table(SUPABASE_METRIC_TABLE)
-                    .select("thread_id, metric_type, created_at")
-                    .in_("metric_type", target_metrics)
-                )
-                if start_date:
-                    query = query.gte("created_at", start_date)
-                if end_date:
-                    if len(end_date) == 10:
-                        query = query.lte("created_at", f"{end_date} 23:59:59")
-                    else:
-                        query = query.lte("created_at", end_date)
-
-                response = query.range(start, start + page_size - 1).execute()
-                batch = response.data or []
-                if not batch:
-                    break
-
-                metrics.extend(batch)
-                start += page_size
-
-            thread_ids = sorted(
-                {
-                    record.get("thread_id")
-                    for record in metrics
-                    if record.get("thread_id")
-                }
-            )
-
-            thread_users: Dict[str, str] = {}
-            chunk_size = 99
-            for idx in range(0, len(thread_ids), chunk_size):
-                chunk = thread_ids[idx : idx + chunk_size]
-                query = (
-                    self.client.table(SUPABASE_MESSAGE_TABLE)
-                    .select("thread_id, metadata")
-                    .eq("role", "user")
-                    .in_("thread_id", chunk)
-                )
-                message_response = query.execute()
-                for message in message_response.data or []:
-                    thread_id = message.get("thread_id")
-                    if not thread_id or thread_id in thread_users:
-                        continue
-                    metadata = message.get("metadata") or {}
-                    if isinstance(metadata, str):
-                        try:
-                            metadata = json.loads(metadata)
-                        except json.JSONDecodeError:
-                            metadata = {}
-                    user_name = metadata.get("user_name") or metadata.get("username")
-                    if user_name:
-                        thread_users[thread_id] = user_name
-
-            per_request: Dict[tuple, List[datetime]] = {}
-            for record in metrics:
-                metric_type = record.get("metric_type")
-                thread_id = record.get("thread_id")
-                created_at = record.get("created_at")
-
-                if (
-                    not metric_type
-                    or metric_type not in target_metrics
-                    or not thread_id
-                    or not created_at
-                ):
-                    continue
-
-                user_name = thread_users.get(thread_id)
-                if not user_name or user_name in excluded_users:
-                    continue
-
-                if isinstance(created_at, str):
-                    dt = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
-                else:
-                    dt = created_at
-
-                key = (metric_type, thread_id)
-                per_request.setdefault(key, []).append(dt)
-
-            durations_by_type: Dict[str, List[float]] = {}
-            for (metric_type, _thread_id), timestamps in per_request.items():
-                if not timestamps:
-                    continue
-                timestamps.sort()
-                duration_seconds = (timestamps[-1] - timestamps[0]).total_seconds()
-                durations_by_type.setdefault(metric_type, []).append(duration_seconds)
-
-            results = []
-            for metric_type in target_metrics:
-                durations = durations_by_type.get(metric_type, [])
-                if durations:
-                    avg_seconds = round(sum(durations) / len(durations))
-                else:
-                    avg_seconds = 0
-                results.append(
-                    {
-                        "metric_type": metric_type,
-                        "avg_duration_seconds": avg_seconds,
-                    }
-                )
-
-            return results
-        except Exception as e:
-            print(f"Error calculating request durations: {e}")
-            return [
-                {"metric_type": mt, "avg_duration_seconds": 0} for mt in target_metrics
-            ]
 
     def get_request_success_rates(
         self, start_date: str = None, end_date: str = None

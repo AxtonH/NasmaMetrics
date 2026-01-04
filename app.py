@@ -102,28 +102,6 @@ def get_log_hours_users():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
-@app.route("/api/inactive-employees")
-def get_inactive_employees():
-    """API endpoint for employees who never messaged Nasma"""
-    try:
-        data = db.get_inactive_employees()
-        return jsonify({"success": True, "data": data})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
-@app.route("/api/request-durations")
-def get_request_durations():
-    """API endpoint for average time to complete key requests"""
-    try:
-        start_date = request.args.get("start_date")
-        end_date = request.args.get("end_date")
-        data = db.get_average_request_durations(start_date, end_date)
-        return jsonify({"success": True, "data": data})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
 @app.route("/api/request-success-rates")
 def get_request_success_rates():
     """API endpoint for per-request success percentages"""

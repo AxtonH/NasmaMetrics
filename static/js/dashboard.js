@@ -155,28 +155,6 @@ function formatWeekLabel(period) {
     });
 }
 
-function formatDurationDisplay(seconds) {
-    if (typeof seconds !== "number" || Number.isNaN(seconds) || seconds <= 0) {
-        return "-";
-    }
-    const rounded = Math.round(seconds);
-    const hours = Math.floor(rounded / 3600);
-    const minutes = Math.floor((rounded % 3600) / 60);
-    const secs = rounded % 60;
-
-    const parts = [];
-    if (hours) {
-        parts.push(`${hours}h`);
-    }
-    if (minutes) {
-        parts.push(`${minutes}m`);
-    }
-    if (!hours && secs) {
-        parts.push(`${secs}s`);
-    }
-    return parts.join(" ") || `${rounded}s`;
-}
-
 function formatPercent(value, decimals = 1) {
     if (typeof value !== "number" || Number.isNaN(value)) {
         return "-";
@@ -304,28 +282,12 @@ async function loadDashboardData() {
             renderLogHoursTable([]);
         }
 
-        const durationsResponse = await fetch(`/api/request-durations${query}`);
-        const durationsData = await durationsResponse.json();
-        if (durationsData.success) {
-            updateRequestDurationsCard(durationsData.data);
-        } else {
-            updateRequestDurationsCard([]);
-        }
-
         const successRatesResponse = await fetch(`/api/request-success-rates${query}`);
         const successRatesData = await successRatesResponse.json();
         if (successRatesData.success) {
             renderRequestSuccessTable(successRatesData.data);
         } else {
             renderRequestSuccessTable([]);
-        }
-
-        const inactiveResponse = await fetch("/api/inactive-employees");
-        const inactiveData = await inactiveResponse.json();
-        if (inactiveData.success) {
-            renderInactiveEmployeesTable(inactiveData.data);
-        } else {
-            renderInactiveEmployeesTable([]);
         }
 
         const activitiesResponse = await fetch(`/api/activities-today${query}`);
@@ -572,36 +534,6 @@ function renderEaseComparisonChart(data) {
     });
 }
 
-function updateRequestDurationsCard(entries) {
-    const card = document.getElementById("card-request-durations");
-    if (!card) {
-        return;
-    }
-
-    const lookup = {};
-    (Array.isArray(entries) ? entries : []).forEach((entry) => {
-        if (!entry || typeof entry.metric_type !== "string") {
-            return;
-        }
-        const key = entry.metric_type.toLowerCase();
-        lookup[key] =
-            typeof entry.avg_duration_seconds === "number"
-                ? entry.avg_duration_seconds
-                : null;
-    });
-
-    [
-        { key: "timeoff", el: "durationTimeoffValue" },
-        { key: "overtime", el: "durationOvertimeValue" },
-    ].forEach(({ key, el }) => {
-        const target = document.getElementById(el);
-        if (!target) {
-            return;
-        }
-        target.textContent = formatDurationDisplay(lookup[key]);
-    });
-}
-
 function renderRequestSuccessTable(entries) {
     const tableBody = document.getElementById("requestSuccessTableBody");
     if (!tableBody) {
@@ -639,36 +571,6 @@ function renderRequestSuccessTable(entries) {
                     <td class="px-4 py-3 font-medium text-gray-800">${label}</td>
                     <td class="px-4 py-3 text-purple-700 font-semibold">${successRate}</td>
                     <td class="px-4 py-3 text-right text-gray-600">${successes}/${total}</td>
-                </tr>
-            `;
-        })
-        .join("");
-}
-
-function renderInactiveEmployeesTable(entries) {
-    const tableBody = document.getElementById("inactiveEmployeesTableBody");
-    if (!tableBody) {
-        return;
-    }
-
-    if (!Array.isArray(entries) || !entries.length) {
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="2" class="px-4 py-3 text-center text-gray-500">
-                    Everyone has chatted with Nasma!
-                </td>
-            </tr>
-        `;
-        return;
-    }
-
-    tableBody.innerHTML = entries
-        .map((entry) => {
-            const name = entry.employee_name || entry.user_name || "-";
-            return `
-                <tr class="border-t border-gray-100">
-                    <td class="px-4 py-3 font-medium text-gray-800">${entry.department || "Unknown"}</td>
-                    <td class="px-4 py-3">${name}</td>
                 </tr>
             `;
         })
