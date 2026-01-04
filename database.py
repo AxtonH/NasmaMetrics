@@ -637,7 +637,7 @@ class Database:
                     return json.load(f)
             else:
                 # Default value
-                return {"overall_satisfaction": "9.48"}
+                return {"overall_satisfaction": "9.62"}
         except Exception as e:
             print(f"Error fetching satisfaction data: {e}")
             return {"overall_satisfaction": "N/A"}
